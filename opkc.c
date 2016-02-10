@@ -5,13 +5,6 @@
 #include <stdio.h>
 #include <optimpack.h>
 
-/*				Les Warning
-
-	- MyOptimizer : Il nous le faut en global pour pouvoir l'appeler dans WhatTask mais comment le declarer sachant que son type detend de l'algo??
-	- Plein de warning en decoule quand on fait des comparaisons et des egalites. On peut garder 5 variables globales pour l'optimiseur sinon mais pas pratique.
-
-	-Using deprecated NumPy API : On s'en fiche
-*/
 
 /*  -------------------------- ON DEFINIT LES VARIABLES GLOBALES --------------------------- */
 // L'Espace
@@ -30,7 +23,7 @@ opk_bound_t *lower;
 opk_bound_t *upper;
 
 // Les Optimiseurs 
-opk_nlcg_t *MyOptimizer = NULL; 
+const char *algorithm_name = "nlcg"; 	// Le nom de l'optimiseur
 opk_nlcg_t *nlcg = NULL;        // non-linear conjugate gradient optimizer 
 opk_vmlm_t *vmlm = NULL;        // limited memory quasi-Newton optimizer 
 opk_vmlmb_t *vmlmb = NULL;      // idem with bound constraints 
@@ -114,7 +107,6 @@ static PyObject *Initialisation (PyObject * self, PyObject * args, PyObject * ke
 // Pareil + on initialise les parametres facultatifs
     double bl = 0;
     double bu = 1e6;
-    const char *algorithm_name = "nlcg";
     char *linesrch_name = "quadratic";
     char *autostep_name = "ShannoPhua";
     char *nlcgmeth_name = "FletcherReeves";
@@ -510,18 +502,6 @@ static PyObject *Initialisation (PyObject * self, PyObject * args, PyObject * ke
     }
     fprintf(fichier, "repere7 \n");
 
-// On declare globalement quelle optimiseur on utilise
-    if (vmlmb != NULL) 
-   	 {MyOptimizer = vmlmb;}
-    else if (vmlmn != NULL) 
-   	 {MyOptimizer = vmlmn;}
-    else if (vmlm != NULL) 
-   	 {MyOptimizer = vmlm;}
-    else if (lbfgs != NULL) 
-   	 {MyOptimizer = lbfgs;}
-    else 
-   	 {MyOptimizer = nlcg;}
-
     // Free workspace 
 /*    OPK_DROP (vx);
     OPK_DROP (vg);
@@ -546,7 +526,7 @@ static PyObject *Initialisation (PyObject * self, PyObject * args, PyObject * ke
 
 
 // ---------------------------------------------------------------------------------------- 
-static PyObject *WhatTask (PyObject * self, PyObject * args)
+static PyObject *Iterate (PyObject * self, PyObject * args)
 {
 // Si on veut afficher des trucs pour y voir plus clair
 /*    FILE* fichier = NULL;
@@ -559,7 +539,6 @@ static PyObject *WhatTask (PyObject * self, PyObject * args)
 */
 
 // arguments d'entree
-    char *QuelleFonction;
     PyObject *x_obj=NULL, *x_arr=NULL;
     double f_c;
     PyObject *g_obj, *g_arr;
@@ -570,7 +549,7 @@ static PyObject *WhatTask (PyObject * self, PyObject * args)
     double *x, *g;
 
 // Conversion
-    if (!PyArg_ParseTuple (args, "sOdO",&QuelleFonction, &x_obj, &f_c, &g_obj))
+    if (!PyArg_ParseTuple (args, "OdO",&x_obj, &f_c, &g_obj))
        {return NULL;}
 
 // Je sais pas a quoi ca sert mais c'etait fait par Jonathan
@@ -589,53 +568,237 @@ static PyObject *WhatTask (PyObject * self, PyObject * args)
     vx = opk_wrap_simple_double_vector (vspace, x, free, x);
     vg = opk_wrap_simple_double_vector (vspace, g, free, g);
 
-// On appelle la fonction demandee
-    if (strcmp(QuelleFonction, "Iterate") == 0)
-    {
-	if (MyOptimizer == nlcg)
-	    {task_locale = opk_iterate_nlcg(MyOptimizer, vx, f_c, vg);}
-	else if (MyOptimizer == lbfgs)
-	    {task_locale = opk_iterate_lbfgs(MyOptimizer, vx, f_c, vg);}
-	else if (MyOptimizer == vmlm)
-	    {task_locale = opk_iterate_vmlm(MyOptimizer, vx, f_c, vg);}
-	else if (MyOptimizer == vmlmn)
-	    {task_locale = opk_iterate_vmlmn(MyOptimizer, vx, f_c, vg);}
-	else if (MyOptimizer == vmlmb)
-	    {task_locale = opk_iterate_vmlmb(MyOptimizer, vx, f_c, vg, lower, upper);}
-    }
+// On appelle la fonction iterate
+    if (strcasecmp (algorithm_name, "nlcg") == 0) 
+        {task_locale = opk_iterate_nlcg(nlcg, vx, f_c, vg);}
+    else if (strcasecmp (algorithm_name, "lbfgs") == 0)
+        {task_locale = opk_iterate_lbfgs(lbfgs, vx, f_c, vg);}
+    else if (strcasecmp (algorithm_name, "vmlm") == 0)
+        {task_locale = opk_iterate_vmlm(vmlm, vx, f_c, vg);}
+    else if (strcasecmp (algorithm_name, "vmlmn") == 0)
+        {task_locale = opk_iterate_vmlmn(vmlmn, vx, f_c, vg);}
+    else 
+        {task_locale = opk_iterate_vmlmb(vmlmb, vx, f_c, vg, lower, upper);}
 
 // On prend la valeur de "task"
     if (task_locale == OPK_TASK_START)
-    {task_c = "OPK_TASK_START";}   
+    	{task_c = "OPK_TASK_START";}   
     else if (task_locale == OPK_TASK_COMPUTE_FG)
-    {task_c = "OPK_TASK_COMPUTE_FG";}
+   	{task_c = "OPK_TASK_COMPUTE_FG";}
     else if (task_locale == OPK_TASK_NEW_X)
-    {task_c = "OPK_TASK_NEW_X";}
+    	{task_c = "OPK_TASK_NEW_X";}
     else if (task_locale == OPK_TASK_FINAL_X)
-    {task_c = "OPK_TASK_FINAL_X";}
+    	{task_c = "OPK_TASK_FINAL_X";}
     else if (task_locale == OPK_TASK_WARNING)
-    {task_c = "OPK_TASK_WARNING";}
+    	{task_c = "OPK_TASK_WARNING";}
     else if (task_locale == OPK_TASK_ERROR)
-    {task_c = "OPK_TASK_ERROR";}
+    	{task_c = "OPK_TASK_ERROR";}
     else
-    {task_c = "OPK_TASK_UNKNOWN";}
+    	{task_c = "OPK_TASK_UNKNOWN";}
 
    // fclose(fichier);
 
 // On renvoit la valeur de "task"
     return Py_BuildValue("s",task_c);
 }
+// ---------------------------------------------------------------------------------------- 
+
+
+
+
+// ---------------------------------------------------------------------------------------- 
+static PyObject *TaskInfo (PyObject * self, PyObject * args)
+{
+// Si on veut afficher des trucs pour y voir plus clair
+    FILE* fichier = NULL;
+    fichier = fopen("text.txt", "w");
+    if (fichier == NULL)
+    {
+	return Py_None;
+    }
+    fprintf(fichier, "s pour string \n");
+
+// Arguments d'entree
+    char *QuelleFonction;
+// Arguments de sortie
+    opk_task_t local_task;
+    opk_status_t local_status;
+    opk_index_t local_iteration = -1;
+    opk_index_t local_evaluation = -1;
+    opk_index_t local_restart = -1;
+    double local_step = -1;
+// Valeur de sortie
+    char * return_c = "FAILURE : NO RETURNED VALUE";
+// Autres declarations
+    double Value_d = -1;
+    char Value_c[80];
+
+// Conversion
+    if (!PyArg_ParseTuple (args, "s",&QuelleFonction))
+       {return NULL;}
+
+// On appelle la fonction demandee
+// ------------ TASK
+    if (strcmp(QuelleFonction, "Get_task") == 0)
+    {
+    // On store sa valeur dans l'objet approprie
+ 	if (strcasecmp (algorithm_name, "nlcg") == 0) 
+	    {local_task = opk_get_nlcg_task(nlcg);}
+	else if (strcasecmp (algorithm_name, "lbfgs") == 0)
+	    {local_task = opk_get_lbfgs_task(lbfgs);}
+	else if (strcasecmp (algorithm_name, "vmlm") == 0)
+	    {local_task = opk_get_vmlm_task(vmlm);}
+	else if (strcasecmp (algorithm_name, "vmlmn") == 0)
+	    {local_task = opk_get_vmlmn_task(vmlmn);}
+	else 
+	    {local_task = opk_get_vmlmb_task(vmlmb);}
+    // Puis on converti la valeur de retour en chaine de charactere
+        if (local_task == OPK_TASK_START)
+    	    {return_c = "OPK_TASK_START";}   
+        else if (local_task == OPK_TASK_COMPUTE_FG)
+   	    {return_c = "OPK_TASK_COMPUTE_FG";}
+        else if (local_task == OPK_TASK_NEW_X)
+    	    {return_c = "OPK_TASK_NEW_X";}
+        else if (local_task == OPK_TASK_FINAL_X)
+    	    {return_c = "OPK_TASK_FINAL_X";}
+        else if (local_task == OPK_TASK_WARNING)
+    	    {return_c = "OPK_TASK_WARNING";}
+        else if (local_task == OPK_TASK_ERROR)
+    	    {return_c = "OPK_TASK_ERROR";}
+        else
+    	    {return_c = "OPK_GET_TASK_FAILURE";}
+    }
+// ------------ STATUS
+    else if (strcmp(QuelleFonction, "Get_status") == 0)
+    {
+// 	if (strcasecmp (algorithm_name, "nlcg") == 0) 
+//	    {local_status = opk_get_nlcg_status(nlcg);}
+	if (strcasecmp (algorithm_name, "lbfgs") == 0)
+	    {local_status = opk_get_lbfgs_status(lbfgs);}
+	else if (strcasecmp (algorithm_name, "vmlm") == 0)
+	    {local_status = opk_get_vmlm_status(vmlm);}
+	else if (strcasecmp (algorithm_name, "vmlmn") == 0)
+	    {local_status = opk_get_vmlmn_status(vmlmn);}
+	else 
+	    {local_status = opk_get_vmlmb_status(vmlmb);}
+
+        if (local_status == OPK_SUCCESS)
+    	    {return_c = "OPK_SUCCESS";}   
+        else
+    	    {return_c = "OPK_GET_STATUS_FAILURE";}
+    }
+// ------------ ITERATION
+    else if (strcmp(QuelleFonction, "Get_iteration") == 0)
+    {
+ 	if (strcasecmp (algorithm_name, "nlcg") == 0) 
+	    {local_iteration = opk_get_nlcg_iterations(nlcg);}
+	else if (strcasecmp (algorithm_name, "lbfgs") == 0)
+	    {local_iteration = opk_get_lbfgs_iterations(lbfgs);}
+	else if (strcasecmp (algorithm_name, "vmlm") == 0)
+	    {local_iteration = opk_get_vmlm_iterations(vmlm);}
+	else if (strcasecmp (algorithm_name, "vmlmn") == 0)
+	    {local_iteration = opk_get_vmlmn_iterations(vmlmn);}
+	else 
+	    {local_iteration = opk_get_vmlmb_iterations(vmlmb);}
+
+        if (local_iteration != -1)
+	{
+	    Value_d = local_iteration;
+            sprintf(Value_c, "%lf", Value_d);
+	    return_c = Value_c;
+	} 
+        else
+    	    {return_c = "OPK_GET_ITERATION_FAILURE";}
+    }
+// ------------ EVALUATION
+    else if (strcmp(QuelleFonction, "Get_evaluation") == 0)
+    {
+ 	if (strcasecmp (algorithm_name, "nlcg") == 0) 
+	    {local_evaluation = opk_get_nlcg_evaluations(nlcg);}
+	else if (strcasecmp (algorithm_name, "lbfgs") == 0)
+	    {local_evaluation = opk_get_lbfgs_evaluations(lbfgs);}
+	else if (strcasecmp (algorithm_name, "vmlm") == 0)
+	    {local_evaluation = opk_get_vmlm_evaluations(vmlm);}
+	else if (strcasecmp (algorithm_name, "vmlmn") == 0)
+	    {local_evaluation = opk_get_vmlmn_evaluations(vmlmn);}
+	else 
+	    {local_evaluation = opk_get_vmlmb_evaluations(vmlmb);}
+
+        if (local_evaluation != -1)
+	{
+	    Value_d = local_evaluation;
+            sprintf(Value_c, "%lf", Value_d);
+	    return_c = Value_c;
+	}  
+        else
+    	    {return_c = "OPK_GET_EVALUATION_FAILURE";}    
+    }
+// ------------ RESTART
+    else if (strcmp(QuelleFonction, "Get_restarts") == 0)
+    {
+ 	if (strcasecmp (algorithm_name, "nlcg") == 0) 
+	    {local_restart = opk_get_nlcg_restarts(nlcg);}
+	else if (strcasecmp (algorithm_name, "lbfgs") == 0)
+	    {local_restart = opk_get_lbfgs_restarts(lbfgs);}
+	else if (strcasecmp (algorithm_name, "vmlm") == 0)
+	    {local_restart = opk_get_vmlm_restarts(vmlm);}
+	else if (strcasecmp (algorithm_name, "vmlmn") == 0)
+	    {local_restart = opk_get_vmlmn_restarts(vmlmn);}
+	else 
+	    {local_restart = opk_get_vmlmb_restarts(vmlmb);}
+ 
+        if (local_restart != -1)
+	{
+	    Value_d = local_restart;
+            sprintf(Value_c, "%lf", Value_d);
+	    return_c = Value_c;
+	}  
+        else
+    	    {return_c = "OPK_GET_RESTART_FAILURE";} 
+    }
+// ------------ STEP
+    else if (strcmp(QuelleFonction, "Get_step") == 0)
+    {
+ 	if (strcasecmp (algorithm_name, "nlcg") == 0) 
+	    {local_step = opk_get_nlcg_step(nlcg);}
+	else if (strcasecmp (algorithm_name, "lbfgs") == 0)
+	    {local_step = opk_get_lbfgs_step(lbfgs);}
+	else if (strcasecmp (algorithm_name, "vmlm") == 0)
+	    {local_step = opk_get_vmlm_step(vmlm);}
+	else if (strcasecmp (algorithm_name, "vmlmn") == 0)
+	    {local_step = opk_get_vmlmn_step(vmlmn);}
+	else 
+	    {local_step = opk_get_vmlmb_step(vmlmb);}
+        if (local_step != -1)
+	{
+            sprintf(Value_c, "%lf", local_step);
+	    return_c = Value_c;
+	}   
+        else
+    	    {return_c = "OPK_GET_STEP_FAILURE";} 
+    }
+// ------------ WRONG INPUT
+    else
+	{return_c = "WRONG INPUT, CHECK FUNCTION HELP FOR MORE DETAILS";}
+
+    fclose(fichier);
+// On renvoit la valeur demandee sous forme de chaine de charactere
+    return Py_BuildValue("s",return_c);
+}
+// ---------------------------------------------------------------------------------------- 
 
 
 
 
 // ---------------------------------------------------------------------------------------- 
 //  Define functions in module
-static PyMethodDef Methods[] = {
-    {"Initialisation", Initialisation, METH_VARARGS|METH_KEYWORDS, "lala"},
-    {"WhatTask", WhatTask, METH_VARARGS, "lala"},
+static PyMethodDef Methods[] = 
+    {
+    {"Initialisation", (PyCFunction)Initialisation, METH_VARARGS|METH_KEYWORDS, "lala"},
+    {"Iterate", (PyCFunction)Iterate, METH_VARARGS, "lala"},
+    {"TaskInfo", (PyCFunction)TaskInfo, METH_VARARGS, "lala"},
     {NULL, NULL, 0, NULL}
-};
+    };
 
 //module initialization */
 	// PYTHON2

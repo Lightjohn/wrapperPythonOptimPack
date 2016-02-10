@@ -121,13 +121,13 @@ def fg(x,gx):
 
 
 ############################ FONCTION DE ROSENBROCK ############################## 
-def fonctioncarre (x):
+def Rosenbrock (x):
     return (x[0]-1)*(x[0]-1) + 10*(x[0]*x[0]-x[1]*x[1])*(x[0]*x[0]-x[1]*x[1])
 
 def fg_Rosen (x,gx): 
     gx[0] = 2*(x[0]-1)+40*x[0]*(x[0]*x[0]-x[1]*x[1])
     gx[1] = -40*x[1]*(x[0]*x[0]-x[1]*x[1])
-    return fonctioncarre(x)
+    return Rosenbrock(x)
     
 x = np.array([-1.5,1.4], dtype="double")
 g = np.array([12,4], dtype="double")

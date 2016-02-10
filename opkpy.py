@@ -45,19 +45,39 @@ import opkc
 ## Verifier les noms des algos, leurs parametres d'entree sortie, p-e plus de description
 ## Documenter mem, powell, verbose, linesearch autostep, nlcg
 
-## On definit les autres trucs  
-#    bl = numpy.array([0], dtype="double")
-#    bu = numpy.array([1e6], dtype="double")
-#    algorithm = "nlcg"
-#    linesearch = "quadratic"
+## dans Iterate et TaskInfo attention a nlcg pas comme les autres 
+
 #############################################################################
 
+##extern WhatTask           DECLARATION ET DOCUMENTATION
+"""      ---------- DOCUMENT: WhatTask ----------
+The function WhatTask perform the task given as a first parameter by the user.
+It returns the new task value.
+
+The input arguments are :
+FonctionName --> the name of the action that needs to be performed.
+                 It is a char string. Possible values are :
+        "Iterate" --> Make an iteration and store the new value of x.
+        "Get_task" --> 
+        "Get_status" -->  
+        "Get_iteration" --> 
+        "Get_evaluation" --> 
+        "Get_restarts" -->          
+        "Get_step" -->   
+x --> the current point of the function.
+fx --> the value of the function to minimize at current point.
+g --> the function gradient at current point.
+    
+"""
 
 def opk_minimize(x,fg,g,bl=0,bu=1e6,algorithm="nlcg",linesearch="quadratic",autostep="ShannoPhua",nlcg="FletcherReeves",delta=5e-2,epsilon=1e-2,gatol=1.0e-6,grtol=0.0,maxiter=50,maxeval=50,mem=5,powell=False,verbose=0):
     
     """      ---------- DOCUMENT: opk_minimize ----------
         
-    The function opk_minimize minimizes a function passed by the user.
+    The function opk_minimize minimizes a function passed by the user following 
+    a given algorithm, linesearch, etc. It does not return anything but the 
+    value of the current point x is constantly uploaded in parameter x.
+    
     The input arguments are :
     x --> the starting point of the function. x contains all the variables of 
           the fonction to minimize in a numpy array of dimension 1, and type 
@@ -122,14 +142,14 @@ def opk_minimize(x,fg,g,bl=0,bu=1e6,algorithm="nlcg",linesearch="quadratic",auto
     
 # Tests to check the entrys of the algorithm
     if ( (isinstance(x,np.ndarray) == False) or (len(x.shape) != 1) ):
-        print "ERROR : x must be of type numpy.ndarray"
+        print "ERROR : x must be of type numpy.ndarray and of dimension 1"
         task = "INPUT_ERROR"
     fx = fg(x,g)
     if (isinstance(fx,np.float64) == False):
         print "ERROR :fg must return a numpy.ndarray of size 1"
         task = "INPUT_ERROR"
     if ( (isinstance(g,np.ndarray) == False) or (len(g.shape) != 1) ):
-        print "ERROR :g must be of type numpy.ndarray"    
+        print "ERROR :g must be of type numpy.ndarray  and of dimension 1"    
         task = "INPUT_ERROR"
         
     while True:
@@ -140,11 +160,11 @@ def opk_minimize(x,fg,g,bl=0,bu=1e6,algorithm="nlcg",linesearch="quadratic",auto
         elif (task == "OPK_TASK_COMPUTE_FG") :
            fx = fg(x, g)                                     # Compute f and g
            evaluation = evaluation+1                         # Increase evaluation
-           task = opkc.WhatTask("Iterate", x, fx, g);    # Iterate
+           task = opkc.Iterate(x, fx, g);    # Iterate
     # A new iterate is available
         elif (task == "OPK_TASK_NEW_X") :
            iteration = iteration+1                           # Increase iteration
-           task = opkc.WhatTask("Iterate", x, fx, g);    # Iterate                                     
+           task = opkc.Iterate( x, fx, g);    # Iterate                                     
     # Algorithm has converged, solution is available
         elif (task == "OPK_TASK_FINAL_X"):
            print"Algorithm has converged, solution is available"
@@ -179,7 +199,8 @@ def opk_minimize(x,fg,g,bl=0,bu=1e6,algorithm="nlcg",linesearch="quadratic",auto
             print"iteration = ",iteration, "     evaluation = ",evaluation  
             break 
 
-        print" f(x) = ",fx
+       # print" f(x) = ",fx
+        print" retour = ", opkc.TaskInfo("Get_evaluation")
 
         
         
