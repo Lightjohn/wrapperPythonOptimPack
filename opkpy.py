@@ -42,6 +42,10 @@ import opkc
 # Dans les tests d'input, tester si f(x) est un Reel! Pas necessairement un float
 # Peut etre testersa dimension ?
 
+## Changer les valeurs de sortie pour get_s et get_y
+# les get_options et set_options ont des arguments compliques, a voir
+# pareil pour les fonctions specifiques d'nlcg
+
 ## Verifier les noms des algos, leurs parametres d'entree sortie, p-e plus de description
 ## Documenter mem, powell, verbose, linesearch autostep, nlcg
 
@@ -49,26 +53,41 @@ import opkc
 
 #############################################################################
 
-##extern WhatTask           DECLARATION ET DOCUMENTATION
-"""      ---------- DOCUMENT: WhatTask ----------
-The function WhatTask perform the task given as a first parameter by the user.
-It returns the new task value.
 
-The input arguments are :
-FonctionName --> the name of the action that needs to be performed.
-                 It is a char string. Possible values are :
-        "Iterate" --> Make an iteration and store the new value of x.
-        "Get_task" --> 
-        "Get_status" -->  
-        "Get_iteration" --> 
-        "Get_evaluation" --> 
-        "Get_restarts" -->          
-        "Get_step" -->   
+#############################################################################
+## DECLARATION ET DOCUMENTATION
+
+##extern Iterate          
+"""      ---------- DOCUMENT: Iterate ----------
+The function Iterate performs an iteration of x given the algorithm,
+linesearch, etc given in parameter of pok_minimize. It returns the value of
+the next task.
+
+The input arguments are :  
 x --> the current point of the function.
 fx --> the value of the function to minimize at current point.
 g --> the function gradient at current point.
     
 """
+
+# extern TaskInfo
+"""      ---------- DOCUMENT: Taskinfo ----------
+The function TaskInfo performs return the information asked by the user in 
+parameter, regarding the current optimizer.
+The returned value is always a char string, even if it represents a double.
+
+The input argument is fonctionName, the name of the action that needs to be 
+performed. It is a char string. Possible values are :
+    "Get_task" --> 
+    "Get_status" -->  
+    "Get_iteration" --> 
+    "Get_evaluation" --> 
+    "Get_restarts" -->          
+    "Get_step" -->   
+    
+"""
+#############################################################################
+
 
 def opk_minimize(x,fg,g,bl=0,bu=1e6,algorithm="nlcg",linesearch="quadratic",autostep="ShannoPhua",nlcg="FletcherReeves",delta=5e-2,epsilon=1e-2,gatol=1.0e-6,grtol=0.0,maxiter=50,maxeval=50,mem=5,powell=False,verbose=0):
     
@@ -200,7 +219,5 @@ def opk_minimize(x,fg,g,bl=0,bu=1e6,algorithm="nlcg",linesearch="quadratic",auto
             break 
 
        # print" f(x) = ",fx
-        print" retour = ", opkc.TaskInfo("Get_evaluation")
-
-        
+      
         

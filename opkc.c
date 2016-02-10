@@ -627,6 +627,13 @@ static PyObject *TaskInfo (PyObject * self, PyObject * args)
     opk_index_t local_evaluation = -1;
     opk_index_t local_restart = -1;
     double local_step = -1;
+    opk_status_t local_get_options;
+    opk_status_t local_set_options;
+    
+
+// Arguments de sortie specifique a l'optimiseur
+    opk_vector_t* local_vmlmn; // vmlmn pour le get_s et le get_y
+
 // Valeur de sortie
     char * return_c = "FAILURE : NO RETURNED VALUE";
 // Autres declarations
@@ -671,8 +678,8 @@ static PyObject *TaskInfo (PyObject * self, PyObject * args)
 // ------------ STATUS
     else if (strcmp(QuelleFonction, "Get_status") == 0)
     {
-// 	if (strcasecmp (algorithm_name, "nlcg") == 0) 
-//	    {local_status = opk_get_nlcg_status(nlcg);}
+ 	if (strcasecmp (algorithm_name, "nlcg") == 0) 
+	    {return_c = "ERROR : get_status is irrelevant for nlcg algorithm";}
 	if (strcasecmp (algorithm_name, "lbfgs") == 0)
 	    {local_status = opk_get_lbfgs_status(lbfgs);}
 	else if (strcasecmp (algorithm_name, "vmlm") == 0)
@@ -777,9 +784,111 @@ static PyObject *TaskInfo (PyObject * self, PyObject * args)
         else
     	    {return_c = "OPK_GET_STEP_FAILURE";} 
     }
+/* // ------------ GET_OPTIONS
+    else if (strcmp(QuelleFonction, "Get_options") == 0)
+    {
+ 	if (strcasecmp (algorithm_name, "nlcg") == 0) 
+	    {local_step = opk_get_nlcg_options(nlcg);}
+	else if (strcasecmp (algorithm_name, "lbfgs") == 0)
+	    {local_step = opk_get_lbfgs_options(lbfgs);}
+	else if (strcasecmp (algorithm_name, "vmlm") == 0)
+	    {local_step = opk_get_vmlm_options(vmlm);}
+	else if (strcasecmp (algorithm_name, "vmlmn") == 0)
+	    {local_step = opk_get_vmlmn_options(vmlmn);}
+	else 
+	    {local_step = opk_get_vmlmb_options(vmlmb);}
+        if (local_step != -1)
+	{
+            sprintf(Value_c, "%lf", local_step);
+	    return_c = Value_c;
+	}   
+        else
+    	    {return_c = "OPK_GET_STEP_FAILURE";} 
+    }
+// ------------ SET_OPTIONS
+    else if (strcmp(QuelleFonction, "Set_options") == 0)
+    {
+ 	if (strcasecmp (algorithm_name, "nlcg") == 0) 
+	    {local_step = opk_set_nlcg_options(nlcg);}
+	else if (strcasecmp (algorithm_name, "lbfgs") == 0)
+	    {local_step = opk_set_lbfgs_options(lbfgs);}
+	else if (strcasecmp (algorithm_name, "vmlm") == 0)
+	    {local_step = opk_set_vmlm_options(vmlm);}
+	else if (strcasecmp (algorithm_name, "vmlmn") == 0)
+	    {local_step = opk_set_vmlmn_options(vmlmn);}
+	else 
+	    {local_step = opk_set_vmlmb_options(vmlmb);}
+        if (local_step != -1)
+	{
+            sprintf(Value_c, "%lf", local_step);
+	    return_c = Value_c;
+	}   
+        else
+    	    {return_c = "OPK_GET_STEP_FAILURE";} 
+    }
+ // ------------ s
+    else if (strcmp(QuelleFonction, "Get_s") == 0)
+    {
+	if (strcasecmp (algorithm_name, "vmlmn") != 0)
+	    {return_c = "ERROR : Get_s is relevant only with vmlmn algorithm";}
+	else 
+	    {local_vmlmn = opk_get_vmlmn_s(vmlmb, k);}
+
+        if (local_vmlmn == OPK_SUCCESS)
+    	    {return_c = "OPK_SUCCESS";}   
+        else
+    	    {return_c = "OPK_GET_S_FAILURE";}
+    }
+// ------------ y
+    else if (strcmp(QuelleFonction, "Get_y") == 0)
+    {
+	if (strcasecmp (algorithm_name, "vmlmn") != 0)
+	    {return_c = "ERROR : Get_y is relevant only with vmlmn algorithm";}
+	else 
+	    {local_vmlmn = opk_get_vmlmn_y(vmlmb, k);}
+
+        if (local_vmlmn == OPK_SUCCESS)
+    	    {return_c = "OPK_SUCCESS";}   
+        else
+    	    {return_c = "OPK_GET_Y_FAILURE";}
+    }
+
 // ------------ WRONG INPUT
     else
 	{return_c = "WRONG INPUT, CHECK FUNCTION HELP FOR MORE DETAILS";}
+
+// Pour nlcg, differentes fonctions
+    if (strcmp(QuelleFonction, "Get_fmin") == 0)
+    {
+ 	if (strcasecmp (algorithm_name, "nlcg") != 0) 
+	    {return_c = "ERROR : Get_fmin is relevant only with vmlmn algorithm";}
+	else 
+	    {local_status_fmin = opk_get_nlcg_fmin(nlcg, double* fmin);}
+    else if (strcmp(QuelleFonction, "Set_fmin") == 0)
+    {
+ 	if (strcasecmp (algorithm_name, "nlcg") != 0) 
+	    {return_c = "ERROR : Get_fmin is relevant only with vmlmn algorithm";}
+	else 
+	    {local_status_fmin = opk_set_nlcg_fmin(nlcg, double fmin);}
+    else if (strcmp(QuelleFonction, "Unset_fmin") == 0)
+    {
+ 	if (strcasecmp (algorithm_name, "nlcg") != 0) 
+	    {return_c = "ERROR : Get_fmin is relevant only with vmlmn algorithm";}
+	else 
+	    {local_status_fmin = opk_unset_nlcg_fmin(nlcg);}
+    else if (strcmp(QuelleFonction, "Get_description") == 0)
+    {
+ 	if (strcasecmp (algorithm_name, "nlcg") != 0) 
+	    {return_c = "ERROR : Get_fmin is relevant only with vmlmn algorithm";}
+	else 
+	    {local_status_fmin = opk_get_nlcg_description(nlcg, char* str);}
+    
+    if (local_status_fmin == OPK_SUCCESS)
+        {return_c = "OPK_SUCCESS";}   
+    else
+        {return_c = "OPK_FMIN_FAILURE";}
+*/
+
 
     fclose(fichier);
 // On renvoit la valeur demandee sous forme de chaine de charactere
