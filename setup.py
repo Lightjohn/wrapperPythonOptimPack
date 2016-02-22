@@ -13,7 +13,7 @@ import numpy as np
 
 
 # An other...   ------------------------------
-optimpack = Extension("opkc", sources = ["opkc.c"], libraries=["opk"])
+optimpack = Extension("opkc_v3", sources = ["opkc_v3.c"], libraries=["opk"], library_dirs = ["/obs/gheurtier/lib"])
 
 
 # The setup     ------------------------------   

@@ -5,7 +5,7 @@ import matplotlib.pyplot as pl
 import math                                                                     
 import numpy as np
 import copy
-import opkpy
+import opkpy_v3
 
 
 
@@ -129,12 +129,12 @@ def fg_Rosen (x,gx):
     gx[1] = -40*x[1]*(x[0]*x[0]-x[1]*x[1])
     return Rosenbrock(x)
     
-x = np.array([-1.5,1.4], dtype="double")
-g = np.array([12,4], dtype="double")
+x = np.array([-1.2,1.0], dtype="float32")
+g = np.array([12,4], dtype="float32")
 f = fg_Rosen(x,g)
 
 print("INPUT:"+str(x))
-opkpy.opk_minimize(x, fg_Rosen, g, algorithm="vmlm")
+opkpy.opk_minimize(x, fg_Rosen, g, algorithm="nlcg",linesearch="cubic",nlcg ="HestenesStiefel", bl=0, bu=1e6, limited=1)
 print("OUTPUT:"+str(x))
 ###################################################################################  
 
