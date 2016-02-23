@@ -28,9 +28,8 @@
 # *
 # *-----------------------------------------------------------------------------
 
-                                                                    
+
 import numpy as np
-import opkc_v3
 
 #############################################################################
 ##  A FAIRE
@@ -53,7 +52,7 @@ import opkc_v3
 #############################################################################
 ## DECLARATION ET DOCUMENTATION
 
-##extern Initialisation         
+# extern Initialisation
 """      ---------- DOCUMENT: Initialisation ----------
 The function Initialisation performs the creation of vspace and the optimizer 
 as requested by the user. It returns the value of the next task (supposedly
@@ -64,7 +63,7 @@ These cannot be optional arguments for some may be modified by the user.
     
 """
 
-##extern Iterate          
+# extern Iterate
 """      ---------- DOCUMENT: Iterate ----------
 The function Iterate performs an iteration of x given the algorithm,
 linesearch, etc given in parameter of opk_minimize. It returns the value of
@@ -103,12 +102,14 @@ No input, no output.
 """
 #############################################################################
 # Input values
-DELTA_DEFAULT = 5e-2;
-EPSILON_DEFAULT = 1e-2;
-NULL = 0;
+DELTA_DEFAULT = 5e-2
+EPSILON_DEFAULT = 1e-2
+NULL = 0
 
-def opk_minimize(x,fg,g,bl=NULL,bu=NULL,algorithm="nlcg",linesearch="quadratic",autostep="ShannoPhua",nlcg="FletcherReeves",vmlmb="lbfgs",delta=DELTA_DEFAULT,epsilon=EPSILON_DEFAULT,gatol=1.0e-6,grtol=0.0,maxiter=500,maxeval=500,mem=5,powell=False,verbose=0, limited=NULL):
-    
+
+def opk_minimize(x, fg, g, bl=NULL, bu=NULL, algorithm="nlcg", linesearch="quadratic", autostep="ShannoPhua",
+                 nlcg="FletcherReeves", vmlmb="lbfgs", delta=DELTA_DEFAULT, epsilon=EPSILON_DEFAULT, gatol=1.0e-6,
+                 grtol=0.0, maxiter=500, maxeval=500, mem=5, powell=False, verbose=0, limited=NULL):
     """      ---------- DOCUMENT: opk_minimize ----------
         
     The function opk_minimize minimizes a function passed by the user following 
@@ -178,140 +179,138 @@ def opk_minimize(x,fg,g,bl=NULL,bu=NULL,algorithm="nlcg",linesearch="quadratic",
     
              --------------------------------------------"""
 
-# Initialisation of the algorithm
+    # Initialisation of the algorithm
     iteration = 0
     evaluation = 0
     task = "OPK_TASK_START"
     error = False
-    x_final = x.copy()   
+    x_final = x.copy()
     bound_given = 0
-    single = 0   
-    
-# Tests to check the type of the entries
+    single = 0
+
+    # Tests to check the type of the entries
     # size of x
-    if ( (isinstance(x,np.ndarray) == False) or (len(x.shape) != 1) ):
-        print "ERROR : x must be of type numpy.ndarray and of dimension 1"
+    if (isinstance(x, np.ndarray) == False) or (len(x.shape) != 1):
+        print("ERROR : x must be of type numpy.ndarray and of dimension 1")
         task = "INPUT_ERROR"
     # type of x
-    if (isinstance(x[0],np.float32) == True):
+    if isinstance(x[0], np.float32):
         single = 1
-    elif (isinstance(x[0],np.float64) == True):
+    elif isinstance(x[0], np.float64):
         single = 0
-    else :
-        print "ERROR :x elements must be of type float"
-        task = "INPUT_ERROR"   
-    fx = fg(x,g)
+    else:
+        print("ERROR :x elements must be of type float")
+        task = "INPUT_ERROR"
+    fx = fg(x, g)
     # type of f
-    if ( (isinstance(fx,np.float) == False) and (isinstance(fx,np.float64) == False) ):
-        print "ERROR :fg must return a float"
+    if (isinstance(fx, np.float) == False) and (isinstance(fx, np.float64) == False):
+        print("ERROR :fg must return a float")
         task = "INPUT_ERROR"
     # size of g    
-    if ( (isinstance(g,np.ndarray) == False) or (len(g.shape) != 1) ):
-        print "ERROR :g must be of type numpy.ndarray  and of dimension 1"    
+    if (isinstance(g, np.ndarray) == False) or (len(g.shape) != 1):
+        print("ERROR :g must be of type numpy.ndarray  and of dimension 1")
         task = "INPUT_ERROR"
-          
-# Input arguments   
+
+    # Input arguments
     # Delta
-    if (delta != DELTA_DEFAULT):
+    if delta != DELTA_DEFAULT:
         delta_given = 1
     else:
         delta_given = 0
     # epsilon
-    if (epsilon != EPSILON_DEFAULT):
+    if epsilon != EPSILON_DEFAULT:
         epsilon_given = 1
     else:
-        epsilon_given = 0      
-    # bl, bu, mem
-    if ((algorithm=="nlcg") and ( (bl != NULL) or (bu != NULL))):
-        print "WARNING: User specified a bound for algorithm nlcg : irrelevant"  
-    elif ((algorithm=="nlcg") and (mem != 5)):
-        print "WARNING: User specified a mem for algorithm nlcg : irrelevant" 
-    elif ((algorithm=="vmlmb") and (bl != NULL) and (bu == NULL)):
+        epsilon_given = 0
+        # bl, bu, mem
+    if (algorithm == "nlcg") and ((bl != NULL) or (bu != NULL)):
+        print("WARNING: User specified a bound for algorithm nlcg : irrelevant")
+    elif (algorithm == "nlcg") and (mem != 5):
+        print("WARNING: User specified a mem for algorithm nlcg : irrelevant")
+    elif (algorithm == "vmlmb") and (bl != NULL) and (bu == NULL):
         bound_given = 1
-    elif ((algorithm=="vmlmb") and (bl == NULL) and (bu != NULL)):
+    elif (algorithm == "vmlmb") and (bl == NULL) and (bu != NULL):
         bound_given = 2
-    elif ((algorithm=="vmlmb") and (bl != NULL) and (bu != NULL)):
+    elif (algorithm == "vmlmb") and (bl != NULL) and (bu != NULL):
         bound_given = 3
-    else :
+    else:
         bound_given = 0
     # verbose
-    if (verbose != NULL):
-        print "ALGO: ",algorithm, "LINE: ",linesearch, "AUTO: ",autostep
+    if verbose != NULL:
+        print("ALGO: ", algorithm, "LINE: ", linesearch, "AUTO: ", autostep)
     # gatol
-    if (gatol < 0):
-        print "ERROR: bad input for gatol"   
-        task = "INPUT_ERROR"  
-    # grtol
-    elif (grtol < 0):
-        print "ERROR: bad input for grtol"   
-        task = "INPUT_ERROR"  
-    # nlcg
-    if ((algorithm !="nlcg") and (nlcg != "FletcherReeves")):
-        print "WARNING: User specified a search direction for algorithm vmlmb"
+    if gatol < 0:
+        print("ERROR: bad input for gatol")
+        task = "INPUT_ERROR"
+        # grtol
+    elif grtol < 0:
+        print("ERROR: bad input for grtol")
+        task = "INPUT_ERROR"
+        # nlcg
+    if (algorithm != "nlcg") and (nlcg != "FletcherReeves"):
+        print("WARNING: User specified a search direction for algorithm vmlmb")
 
+    ## tests
+    #    task = opkc.Initialisation(x,algorithm,linesearch,autostep,nlcg,vmlmb,
+    #       delta,epsilon,delta_given, epsilon_given, gatol,grtol,bl,bu,bound_given,mem,powell,single,limited)
+    #    print "task = ",task
+    #    task = opkc.Iterate(x,fx,g,limited)
+    #    print "task = ",task
 
-        
-## tests    
-#    task = opkc.Initialisation(x,algorithm,linesearch,autostep,nlcg,vmlmb, delta,epsilon,delta_given, epsilon_given, gatol,grtol,bl,bu,bound_given,mem,powell,single,limited)     
-#    print "task = ",task
-#    task = opkc.Iterate(x,fx,g,limited)     
-#    print "task = ",task
-    
-# Beginning of the algorithm    
+    # Beginning of the algorithm
     while True:
-    # Caller must call `start` method
-        if (task == "OPK_TASK_START"):
-           task = opkc.Initialisation(x,algorithm,linesearch,autostep,nlcg,vmlmb, delta,epsilon,delta_given, epsilon_given, gatol,grtol,bl,bu,bound_given,mem,powell,single,limited)         
-           print "task = ",task
-    # Caller must compute f(x) and g(x).
-        elif (task == "OPK_TASK_COMPUTE_FG") :
-           fx = fg(x, g)                                     # Compute f and g
-           evaluation = evaluation+1                         # Increase evaluation
-           task = opkc.Iterate(x, fx, g, limited);    # Iterate
-           print "task = ",task
-   # A new iterate is available
-        elif (task == "OPK_TASK_NEW_X") :
-           iteration = iteration+1                           # Increase iteration
-           task = opkc.Iterate( x, fx, g, limited);    # Iterate                                     
-           print "task = ",task
-   # Algorithm has converged, solution is available
-        elif (task == "OPK_TASK_FINAL_X"):     
-           x_final = x.copy()
-           opkc.Close()     
-           print"Algorithm has converged, solution is available"
-           print"iteration = ",iteration, "     evaluation = ",evaluation    
-           break
-    # Algorithm terminated with a warning
-        elif (task == "OPK_TASK_WARNING"):
-           print"Algorithm terminated with a warning"
-           error = True  
-    # An error has ocurred
-        elif (task == "OPK_TASK_ERROR"):
-           print "ERROR :OPK_TASK_ERROR has occured"    
-           error = True   
-    # Error in the variable input
-        elif (task == "INPUT_ERROR"):
-           print "ERROR :Input error, check all the input of function optimize" 
-           error = True             
-    # Unknown task has been asked
+        # Caller must call `start` method
+        if task == "OPK_TASK_START":
+            task = opkc.Initialisation(x, algorithm, linesearch, autostep, nlcg, vmlmb, delta, epsilon, delta_given,
+                                       epsilon_given, gatol, grtol, bl, bu, bound_given, mem, powell, single, limited)
+            print("task = ", task)
+            # Caller must compute f(x) and g(x).
+        elif task == "OPK_TASK_COMPUTE_FG":
+            fx = fg(x, g)  # Compute f and g
+            evaluation += 1  # Increase evaluation
+            task = opkc.Iterate(x, fx, g, limited)  # Iterate
+            print("task = ", task)
+            # A new iterate is available
+        elif task == "OPK_TASK_NEW_X":
+            iteration += 1  # Increase iteration
+            task = opkc.Iterate(x, fx, g, limited)  # Iterate
+            print("task = ", task)
+            # Algorithm has converged, solution is available
+        elif task == "OPK_TASK_FINAL_X":
+            x_final = x.copy()
+            opkc.Close()
+            print("Algorithm has converged, solution is available")
+            print("iteration = ", iteration, "     evaluation = ", evaluation)
+            break
+            # Algorithm terminated with a warning
+        elif task == "OPK_TASK_WARNING":
+            print("Algorithm terminated with a warning")
+            error = True
+            # An error has ocurred
+        elif task == "OPK_TASK_ERROR":
+            print("ERROR :OPK_TASK_ERROR has occured")
+            error = True
+            # Error in the variable input
+        elif task == "INPUT_ERROR":
+            print("ERROR :Input error, check all the input of function optimize")
+            error = True
+            # Unknown task has been asked
         else:
-           print "ERROR :Unknown task has been asked"    
-           error = True   
-    # An error has occured
-        if (error == True):
+            print("ERROR :Unknown task has been asked")
+            error = True
+            # An error has occured
+        if error:
             break
-    # Too much iterations, check OPK_TASK_NEW_X
-        if (iteration >= maxiter):
+            # Too much iterations, check OPK_TASK_NEW_X
+        if iteration >= maxiter:
             print("Too much iteration\n")
-            print"iteration = ",iteration, "     evaluation = ",evaluation      
+            print("iteration = ", iteration, "     evaluation = ", evaluation)
             break
-    # Too much evaluation of f and g, check OPK_TASK_COMPUTE_FG
-        if (evaluation >= maxeval):
+            # Too much evaluation of f and g, check OPK_TASK_COMPUTE_FG
+        if evaluation >= maxeval:
             print("Too much evaluation\n")
-            print"iteration = ",iteration, "     evaluation = ",evaluation  
-            break 
+            print("iteration = ", iteration, "     evaluation = ", evaluation)
+            break
 
-        print" f(x) = ",fx
+        print(" f(x) = ", fx)
     return x_final
-      
-        
