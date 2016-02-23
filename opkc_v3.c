@@ -480,12 +480,12 @@ Iterate(PyObject * self, PyObject * args)
 
 // Conversion selon le type
     if (type == OPK_DOUBLE) {
-        if (!PyArg_ParseTuple(args, "OdOi", &x_obj, &f_c, &g_obj, &limited_c)) {
+        if (!PyArg_ParseTuple(args, "OdO", &x_obj, &f_c, &g_obj)) {
             return NULL;
         }
     } else {
         f_c = (float) (f_c);
-        if (!PyArg_ParseTuple(args, "OfOi", &x_obj, &f_c, &g_obj, &limited_c)) {
+        if (!PyArg_ParseTuple(args, "OfO", &x_obj, &f_c, &g_obj)) {
             return NULL;
         }
     }
@@ -571,6 +571,7 @@ static PyObject *TaskInfo (PyObject * self, PyObject * args)
     opk_index_t local_iteration = -1;
     opk_index_t local_evaluation = -1;
     opk_index_t local_restart = -1;
+    char local_reason[80];
    // double local_step = -1;
    // opk_status_t local_get_options;
    // opk_status_t local_set_options;   
@@ -637,6 +638,62 @@ static PyObject *TaskInfo (PyObject * self, PyObject * args)
 
         if (local_status == OPK_SUCCESS)
     	    {return_c = "OPK_SUCCESS";}   
+	else if (local_status == OPK_INVALID_ARGUMENT)
+	    {return_c = "OPK_INVALID_ARGUMENT";}
+	else if (local_status == OPK_INSUFFICIENT_MEMORY)
+	    {return_c = "OPK_INSUFFICIENT_MEMORY";}
+	else if (local_status == OPK_ILLEGAL_ADDRESS)
+	    {return_c = "OPK_ILLEGAL_ADDRESS";}
+	else if (local_status == OPK_NOT_IMPLEMENTED)
+	    {return_c = "OPK_NOT_IMPLEMENTED";}
+	else if (local_status == OPK_CORRUPTED_WORKSPACE)
+	    {return_c = "OPK_CORRUPTED_WORKSPACE";}
+	else if (local_status == OPK_BAD_SPACE)
+	    {return_c = "OPK_BAD_SPACE";}
+	else if (local_status == OPK_OUT_OF_BOUNDS_INDEX)
+	    {return_c = "OPK_OUT_OF_BOUNDS_INDEX";}
+	else if (local_status == OPK_NOT_STARTED)
+	    {return_c = "OPK_NOT_STARTED";}
+	else if (local_status == OPK_NOT_A_DESCENT)
+	    {return_c = "OPK_NOT_A_DESCENT";}
+	else if (local_status == OPK_STEP_CHANGED)
+	    {return_c = "OPK_STEP_CHANGED";}
+	else if (local_status == OPK_STEP_OUTSIDE_BRACKET)
+	    {return_c = "OPK_STEP_OUTSIDE_BRACKET";}
+	else if (local_status == OPK_STPMIN_GT_STPMAX)
+	    {return_c = "OPK_STPMIN_GT_STPMAX";}
+	else if (local_status == OPK_STPMIN_LT_ZERO)
+	    {return_c = "OPK_STPMIN_LT_ZERO";}
+	else if (local_status == OPK_STEP_LT_STPMIN)
+	    {return_c = "OPK_STEP_LT_STPMIN";}
+	else if (local_status == OPK_STEP_GT_STPMAX)
+	    {return_c = "OPK_STEP_GT_STPMAX";}
+	else if (local_status == OPK_FTOL_TEST_SATISFIED)
+	    {return_c = "OPK_FTOL_TEST_SATISFIED";}
+	else if (local_status == OPK_GTOL_TEST_SATISFIED)
+	    {return_c = "OPK_GTOL_TEST_SATISFIED";}
+	else if (local_status == OPK_XTOL_TEST_SATISFIED)
+	    {return_c = "OPK_XTOL_TEST_SATISFIED";}
+	else if (local_status == OPK_STEP_EQ_STPMAX)
+	    {return_c = "OPK_STEP_EQ_STPMAX";}
+	else if (local_status == OPK_STEP_EQ_STPMIN)
+	    {return_c = "OPK_STEP_EQ_STPMIN";}
+	else if (local_status == OPK_ROUNDING_ERRORS_PREVENT_PROGRESS)
+	    {return_c = "OPK_ROUNDING_ERRORS_PREVENT_PROGRESS";}
+	else if (local_status == OPK_NOT_POSITIVE_DEFINITE)
+	    {return_c = "OPK_NOT_POSITIVE_DEFINITE";}
+	else if (local_status == OPK_BAD_PRECONDITIONER)
+	    {return_c = "OPK_BAD_PRECONDITIONER";}
+	else if (local_status == OPK_INFEASIBLE_BOUNDS)
+	    {return_c = "OPK_INFEASIBLE_BOUNDS";}
+	else if (local_status == OPK_WOULD_BLOCK)
+	    {return_c = "OPK_WOULD_BLOCK";}
+	else if (local_status == OPK_UNDEFINED_VALUE)
+	    {return_c = "OPK_UNDEFINED_VALUE";}
+	else if (local_status == OPK_TOO_MANY_EVALUATIONS)
+	    {return_c = "OPK_TOO_MANY_EVALUATIONS";}
+	else if (local_status == OPK_TOO_MANY_ITERATIONS)
+	    {return_c = "OPK_TOO_MANY_ITERATIONS";}
         else
     	    {return_c = "OPK_GET_STATUS_FAILURE";}
     }
@@ -708,6 +765,18 @@ static PyObject *TaskInfo (PyObject * self, PyObject * args)
 	}  
         else
     	    {return_c = "OPK_GET_RESTART_FAILURE";} 
+    }
+
+// ------------ REASON
+    if (strcmp(QuelleFonction, "Get_reason") == 0)
+    {
+	if (limited == 0)
+	    {sprintf(local_reason, "REASON_IRRELEVANT_FOR_NON_LIMITED_MINIMIZATION");}
+	else
+	{
+	    sprintf(local_reason, "%s",opk_get_reason(opk_get_status(limited_optimizer)));
+	}
+	return_c = local_reason;
     }
 /*
 // ------------ STEP
@@ -885,11 +954,11 @@ static PyMethodDef Methods[] =
     {NULL, NULL, 0, NULL}
 };
 
-//module initialization */
+#if PY_MAJOR_VERSION >= 3
+//module initialization 
 static struct PyModuleDef optimpack_module =
     { PyModuleDef_HEAD_INIT, "opkc_v3", NULL, -1, Methods };
 
-#if PY_MAJOR_VERSION >= 3
     // Python 3+
 PyMODINIT_FUNC
 PyInit_opkc_v3(void)

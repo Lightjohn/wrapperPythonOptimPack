@@ -82,15 +82,17 @@ The returned value is always a char string, even if it represents a double.
 
 The input argument is the name of the action that needs to be 
 performed. It is a char string. Possible values are :
-    "Get_task" --> 
-    "Get_status" -->  
+    "Get_task" --> Returns the current task.
+    "Get_status" --> Returns the current status. 29 possible values.
     "Get_iterations" --> Returns the number of iterations, supposeldy egal to
                          iteration.
     "Get_evaluations" --> Returns the number of evaluations, supposeldy egal 
                           to evaluation.
-    "Get_restarts" --> Return the number of times the algorithm has restarted.   
+    "Get_restarts" --> Returns the number of times the algorithm has restarted.   
     "Get_step" -->   
-    
+    "Get_reason" --> Retrieves a textual description for a given status, the 
+                     described status is obtained via Get_status. Relevant 
+                     only for limited minimization.
 """
 
 # extern Close
@@ -321,12 +323,17 @@ def opk_minimize(x_in, fg, g, bl=NULL, bu=NULL, algorithm="nlcg", linesearch="qu
     else:
         print("ERROR : Unknown problem has occured")
         # Destruction of the optimizer  
-    
+    info = opkc_v3.TaskInfo("Get_task")    
+    print info, "task"     
+    info = opkc_v3.TaskInfo("Get_status")    
+    print info, "status"   
     info = opkc_v3.TaskInfo("Get_iterations")    
     print info, iteration
     info = opkc_v3.TaskInfo("Get_evaluations")    
     print info, evaluation
     info = opkc_v3.TaskInfo("Get_restarts")    
+    print info
+    info = opkc_v3.TaskInfo("Get_reason")    
     print info
     x_out = x.copy()    
     opkc_v3.Close()   
