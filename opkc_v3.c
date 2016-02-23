@@ -22,6 +22,7 @@ opk_task_t task;
 
 // Les Optimiseurs 
 const char *algorithm_name = "vmlmb"; 	// Le nom de l'optimiseur
+int limited = 0;
 opk_nlcg_t *nlcg;        // non-linear conjugate gradient optimizer 
 opk_vmlmb_t *vmlmb;      // quasi-newton
 opk_optimizer_t *limited_optimizer; // limited memory optimizer
@@ -82,7 +83,6 @@ static PyObject *Initialisation (PyObject * self, PyObject * args, PyObject * ke
     int mem = 5;					// 5            est vmlmb
     int powell = FALSE;
     int single = FALSE;
-    int limited = FALSE;
 
 // On rajoute x
     PyObject *x_obj=NULL;
@@ -157,7 +157,7 @@ static PyObject *Initialisation (PyObject * self, PyObject * args, PyObject * ke
 // LINESEARCH
     if (strcasecmp (linesrch_name, "quadratic") == 0) 
         {lnsrch = opk_lnsrch_new_backtrack (sftol, samin);}
-    else if (strcasecmp (linesrch_name, "Armijo") == 0) 
+    else if (strcasecmp (linesrch_name, "armijo") == 0) 
         {lnsrch = opk_lnsrch_new_backtrack (sftol, 0.5);}
     else if (strcasecmp (linesrch_name, "cubic") == 0)
         {lnsrch = opk_lnsrch_new_csrch (sftol, sgtol, sxtol);}
@@ -474,7 +474,6 @@ static PyObject *Iterate (PyObject * self, PyObject * args)
     PyObject *x_obj=NULL, *x_arr=NULL;
     double f_c;
     PyObject *g_obj, *g_arr;
-    int limited_c;
 // arguments de sortie
     opk_task_t task_locale = OPK_TASK_ERROR;
     char * task_c;
@@ -484,13 +483,13 @@ static PyObject *Iterate (PyObject * self, PyObject * args)
 // Conversion selon le type
     if (type == OPK_DOUBLE)
     {
-        if (!PyArg_ParseTuple (args, "OdOi",&x_obj, &f_c, &g_obj, &limited_c))
+        if (!PyArg_ParseTuple (args, "OdO",&x_obj, &f_c, &g_obj))
            {return NULL;}
     }
     else
     {
 	f_c = (float)(f_c);
-        if (!PyArg_ParseTuple (args, "OfOi",&x_obj, &f_c, &g_obj, &limited_c))
+        if (!PyArg_ParseTuple (args, "OfO",&x_obj, &f_c, &g_obj))
            {return NULL;}
     }
 
@@ -522,7 +521,7 @@ static PyObject *Iterate (PyObject * self, PyObject * args)
 
 
 // On appelle la fonction iterate
-    if (limited_c == 0)
+    if (limited == 0)
     {
    	if (strcasecmp (algorithm_name, "nlcg") == 0) 
             {task_locale = opk_iterate_nlcg(nlcg, vx, f_c, vg);}
@@ -559,9 +558,26 @@ static PyObject *Iterate (PyObject * self, PyObject * args)
 /* ------------------------------------------------------------------------------------------
 ------------------------------------- FONCTION TASKINFO -------------------------------------
 --------------------------------------------------------------------------------------------- */
-/*
+
 static PyObject *TaskInfo (PyObject * self, PyObject * args)
 {
+// Valeur d'entree
+    char *QuelleFonction;
+// Valeur de sortie
+    char * return_c = "FAILURE : No value returned for TaskInfo";
+// Arguments de sortie				
+    opk_task_t local_task=OPK_TASK_WARNING;
+    opk_status_t local_status=OPK_TASK_WARNING;
+    opk_index_t local_iteration = -1;
+    opk_index_t local_evaluation = -1;
+    opk_index_t local_restart = -1;
+   // double local_step = -1;
+   // opk_status_t local_get_options;
+   // opk_status_t local_set_options;   
+// Autres declarations
+    double Value_d = -1;
+    char Value_c[80];
+
 // Si on veut afficher des trucs pour y voir plus clair
     FILE* fichier = NULL;
     fichier = fopen("text.txt", "w");
@@ -569,49 +585,27 @@ static PyObject *TaskInfo (PyObject * self, PyObject * args)
     {
 	return Py_None;
     }
-    fprintf(fichier, "s pour string \n");
-
-// Arguments d'entree
-    char *QuelleFonction;
-// Arguments de sortie
-    opk_task_t local_task;
-    opk_status_t local_status;
-    opk_index_t local_iteration = -1;
-    opk_index_t local_evaluation = -1;
-    opk_index_t local_restart = -1;
-    double local_step = -1;
-    opk_status_t local_get_options;
-    opk_status_t local_set_options;
-    
-
-// Arguments de sortie specifique a l'optimiseur
-//    opk_vector_t* local_vmlmn; // vmlmn pour le get_s et le get_y
-
-// Valeur de sortie
-    char * return_c = "FAILURE : No value returned for TaskInfo";
-// Autres declarations
-    double Value_d = -1;
-    char Value_c[80];
+    fprintf(fichier, "valeur de limited %i \n", limited);
 
 // Conversion
     if (!PyArg_ParseTuple (args, "s",&QuelleFonction))
        {return NULL;}
 
-// On appelle la fonction demandee
+
 // ------------ TASK
     if (strcmp(QuelleFonction, "Get_task") == 0)
     {
     // On store sa valeur dans l'objet approprie
- 	if (strcasecmp (algorithm_name, "nlcg") == 0) 
-	    {local_task = opk_get_nlcg_task(nlcg);}
-	else if (strcasecmp (algorithm_name, "lbfgs") == 0)
-	    {local_task = opk_get_lbfgs_task(lbfgs);}
-	else if (strcasecmp (algorithm_name, "vmlm") == 0)
-	    {local_task = opk_get_vmlm_task(vmlm);}
-	else if (strcasecmp (algorithm_name, "vmlmn") == 0)
-	    {local_task = opk_get_vmlmn_task(vmlmn);}
-	else 
-	    {local_task = opk_get_vmlmb_task(vmlmb);}
+	if (limited == 0)
+	{
+	     if (strcasecmp (algorithm_name, "nlcg") == 0) 
+	         {local_task = opk_get_nlcg_task(nlcg);}
+	     else if (strcasecmp (algorithm_name, "vmlmb") == 0) 
+	         {local_task = opk_get_vmlmb_task(vmlmb);}
+	}
+	else
+	    {local_task = opk_get_task(limited_optimizer);}
+
     // Puis on converti la valeur de retour en chaine de charactere
         if (local_task == OPK_TASK_START)
     	    {return_c = "OPK_TASK_START";}   
@@ -631,36 +625,35 @@ static PyObject *TaskInfo (PyObject * self, PyObject * args)
 // ------------ STATUS
     else if (strcmp(QuelleFonction, "Get_status") == 0)
     {
- 	if (strcasecmp (algorithm_name, "nlcg") == 0) 
-	    {return_c = "ERROR : get_status is irrelevant for nlcg algorithm";}
-	if (strcasecmp (algorithm_name, "lbfgs") == 0)
-	    {local_status = opk_get_lbfgs_status(lbfgs);}
-	else if (strcasecmp (algorithm_name, "vmlm") == 0)
-	    {local_status = opk_get_vmlm_status(vmlm);}
-	else if (strcasecmp (algorithm_name, "vmlmn") == 0)
-	    {local_status = opk_get_vmlmn_status(vmlmn);}
-	else 
-	    {local_status = opk_get_vmlmb_status(vmlmb);}
+	if (limited == 0)
+	{
+	     if (strcasecmp (algorithm_name, "nlcg") == 0) 
+	         {local_status = opk_get_nlcg_status(nlcg);}
+	     else if (strcasecmp (algorithm_name, "vmlmb") == 0) 
+	         {local_status = opk_get_vmlmb_status(vmlmb);}
+	}
+	else
+	    {local_status = opk_get_status(limited_optimizer);}
 
         if (local_status == OPK_SUCCESS)
     	    {return_c = "OPK_SUCCESS";}   
         else
     	    {return_c = "OPK_GET_STATUS_FAILURE";}
     }
-// ------------ ITERATION
-    else if (strcmp(QuelleFonction, "Get_iteration") == 0)
-    {
- 	if (strcasecmp (algorithm_name, "nlcg") == 0) 
-	    {local_iteration = opk_get_nlcg_iterations(nlcg);}
-	else if (strcasecmp (algorithm_name, "lbfgs") == 0)
-	    {local_iteration = opk_get_lbfgs_iterations(lbfgs);}
-	else if (strcasecmp (algorithm_name, "vmlm") == 0)
-	    {local_iteration = opk_get_vmlm_iterations(vmlm);}
-	else if (strcasecmp (algorithm_name, "vmlmn") == 0)
-	    {local_iteration = opk_get_vmlmn_iterations(vmlmn);}
-	else 
-	    {local_iteration = opk_get_vmlmb_iterations(vmlmb);}
 
+// ------------ ITERATION
+
+    else if (strcmp(QuelleFonction, "Get_iterations") == 0)
+    {
+	if (limited == 0)
+	{
+	     if (strcasecmp (algorithm_name, "nlcg") == 0) 
+	         {local_iteration = opk_get_nlcg_iterations(nlcg);}
+	     else if (strcasecmp (algorithm_name, "vmlmb") == 0) 
+	         {local_iteration = opk_get_vmlmb_iterations(vmlmb);}
+	}
+	else
+	    {local_iteration = opk_get_iterations(limited_optimizer);}
         if (local_iteration != -1)
 	{
 	    Value_d = local_iteration;
@@ -670,19 +663,19 @@ static PyObject *TaskInfo (PyObject * self, PyObject * args)
         else
     	    {return_c = "OPK_GET_ITERATION_FAILURE";}
     }
+
 // ------------ EVALUATION
-    else if (strcmp(QuelleFonction, "Get_evaluation") == 0)
+    if (strcmp(QuelleFonction, "Get_evaluations") == 0)
     {
- 	if (strcasecmp (algorithm_name, "nlcg") == 0) 
-	    {local_evaluation = opk_get_nlcg_evaluations(nlcg);}
-	else if (strcasecmp (algorithm_name, "lbfgs") == 0)
-	    {local_evaluation = opk_get_lbfgs_evaluations(lbfgs);}
-	else if (strcasecmp (algorithm_name, "vmlm") == 0)
-	    {local_evaluation = opk_get_vmlm_evaluations(vmlm);}
-	else if (strcasecmp (algorithm_name, "vmlmn") == 0)
-	    {local_evaluation = opk_get_vmlmn_evaluations(vmlmn);}
-	else 
-	    {local_evaluation = opk_get_vmlmb_evaluations(vmlmb);}
+	if (limited == 0)
+	{
+	     if (strcasecmp (algorithm_name, "nlcg") == 0) 
+	         {local_evaluation = opk_get_nlcg_evaluations(nlcg);}
+	     else if (strcasecmp (algorithm_name, "vmlmb") == 0) 
+	         {local_evaluation = opk_get_vmlmb_evaluations(vmlmb);}
+	}
+	else
+	    {local_evaluation = opk_get_evaluations(limited_optimizer);}
 
         if (local_evaluation != -1)
 	{
@@ -693,19 +686,19 @@ static PyObject *TaskInfo (PyObject * self, PyObject * args)
         else
     	    {return_c = "OPK_GET_EVALUATION_FAILURE";}    
     }
+
 // ------------ RESTART
-    else if (strcmp(QuelleFonction, "Get_restarts") == 0)
+    if (strcmp(QuelleFonction, "Get_restarts") == 0)
     {
- 	if (strcasecmp (algorithm_name, "nlcg") == 0) 
-	    {local_restart = opk_get_nlcg_restarts(nlcg);}
-	else if (strcasecmp (algorithm_name, "lbfgs") == 0)
-	    {local_restart = opk_get_lbfgs_restarts(lbfgs);}
-	else if (strcasecmp (algorithm_name, "vmlm") == 0)
-	    {local_restart = opk_get_vmlm_restarts(vmlm);}
-	else if (strcasecmp (algorithm_name, "vmlmn") == 0)
-	    {local_restart = opk_get_vmlmn_restarts(vmlmn);}
-	else 
-	    {local_restart = opk_get_vmlmb_restarts(vmlmb);}
+	if (limited == 0)
+	{
+	     if (strcasecmp (algorithm_name, "nlcg") == 0) 
+	         {local_restart = opk_get_nlcg_restarts(nlcg);}
+	     else if (strcasecmp (algorithm_name, "vmlmb") == 0) 
+	         {local_restart = opk_get_vmlmb_restarts(vmlmb);}
+	}
+	else
+	    {local_restart = opk_get_restarts(limited_optimizer);}
  
         if (local_restart != -1)
 	{
@@ -716,6 +709,7 @@ static PyObject *TaskInfo (PyObject * self, PyObject * args)
         else
     	    {return_c = "OPK_GET_RESTART_FAILURE";} 
     }
+/*
 // ------------ STEP
     else if (strcmp(QuelleFonction, "Get_step") == 0)
     {
@@ -843,12 +837,12 @@ static PyObject *TaskInfo (PyObject * self, PyObject * args)
         {return_c = "OPK_FMIN_FAILURE";}
 */
 
-/*
+
     fclose(fichier);
 // On renvoit la valeur demandee sous forme de chaine de charactere
     return Py_BuildValue("s",return_c);
 }
-*/
+
 // ------------------------------------------------------------------------------------------ 
 
 
@@ -883,7 +877,7 @@ static PyMethodDef Methods[] =
     {
     {"Initialisation", (PyCFunction)Initialisation, METH_VARARGS|METH_KEYWORDS, "lala"},
     {"Iterate", (PyCFunction)Iterate, METH_VARARGS, "lala"},
-   // {"TaskInfo", (PyCFunction)TaskInfo, METH_VARARGS, "lala"},
+    {"TaskInfo", (PyCFunction)TaskInfo, METH_VARARGS, "lala"},
     {"Close", (PyCFunction)Close, METH_NOARGS, "lala"},
     {NULL, NULL, 0, NULL}
     };
