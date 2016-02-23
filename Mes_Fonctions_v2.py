@@ -1,12 +1,9 @@
 # -*- coding: utf-8 -*-
+import os
+
+from numpy import *
 from PIL.Image import *
 from pylab import *
-from random import gauss
-import matplotlib
-import math
-import os
-import time
-import numpy as np
 
 
 # from decimal import Decimal
@@ -25,7 +22,7 @@ def gradi(vect):
     f(t+dt) = vect(i) + dt*(vect(i+1)-vect(i)/1) """
 
     NbLigne, NbColonne = vect.shape
-    Retour = np.zeros((NbLigne, NbColonne))
+    Retour = zeros((NbLigne, NbColonne))
     for i in range(0, NbLigne):
         for j in range(0, NbColonne):
             if i == NbLigne - 1:
@@ -49,7 +46,7 @@ def gradj(vect):
     f(t+dt) = vect(j) + dt*(vect(j+1)-vect(j)/1) """
 
     NbLigne, NbColonne = vect.shape
-    Retour = np.zeros((NbLigne, NbColonne))
+    Retour = zeros((NbLigne, NbColonne))
     for i in range(0, NbLigne):
         for j in range(0, NbColonne):
             if j == NbColonne - 1:
@@ -94,20 +91,20 @@ def conv(image, kernel, place="centre", forme="matrice"):
 
         ##### ON RECENTRE LE KERNEL...
         if NbLigne % 2 == 0:
-            kernel = np.roll(kernel.reshape(NbLigne * NbColonne), int(NbLigne * NbColonne / 2 - NbLigne / 2)).reshape(
+            kernel = roll(kernel.reshape(NbLigne * NbColonne), int(NbLigne * NbColonne / 2 - NbLigne / 2)).reshape(
                 (NbLigne, NbColonne))
         else:
-            kernel = np.roll(kernel.reshape(NbLigne * NbColonne), -int(np.floor(NbLigne * NbColonne / 2))).reshape(
+            kernel = roll(kernel.reshape(NbLigne * NbColonne), -int(floor(NbLigne * NbColonne / 2))).reshape(
                 (NbLigne, NbColonne))
-        TF = real(ifft2(fft2(image) * fft2(kernel)))
+        TF = real(fft.ifft2(fft.fft2(image) * fft.fft2(kernel)))
 
     ##### ON REPLACE CORRECTEMENT L'IMAGE
     elif place == "centre":
-        TF = real(ifft2(fft2(image) * fft2(kernel)))
-        TF = np.roll(TF.reshape(NbLigne * NbColonne), -int(floor(NbLigne * NbColonne / 2)))
+        TF = real(fft.ifft2(fft.fft2(image) * fft.fft2(kernel)))
+        TF = roll(TF.reshape(NbLigne * NbColonne), -int(floor(NbLigne * NbColonne / 2)))
         TF = TF.reshape((NbLigne, NbColonne))
         if NbColonne % 2 == 0:
-            TF = np.roll(TF, 1, axis=1)
+            TF = roll(TF, 1, axis=1)
             parite = 1
         TF_intermediaire = TF.copy()
         for j in range(int(ceil((NbColonne + 1) / 2)), NbColonne + parite):
@@ -118,7 +115,7 @@ def conv(image, kernel, place="centre", forme="matrice"):
         print("Erreur, mauvais paramètre d'entrée dans CONV")
 
     ##### ON FILTRE LES BASSES FREQUENCES
-    TF = np.around(TF, decimals=10)
+    TF = around(TF, decimals=10)
 
     ##### ON RETOURNE TF SOUS LA FORME DÉSIRÉE
     if forme == "vecteur":
@@ -173,21 +170,21 @@ def conv_matrices(A, kernel, forme="vecteur", place="coin"):
     elif place == "inv":
 
         if NbLigne % 2 == 0:
-            K = np.roll(kernel[::-1].reshape(NbLigne * NbColonne), int(NbLigne * NbColonne / 2 - NbLigne / 2))
+            K = roll(kernel[::-1].reshape(NbLigne * NbColonne), int(NbLigne * NbColonne / 2 - NbLigne / 2))
         else:
-            K = np.roll(kernel[::-1].reshape(NbLigne * NbColonne), -int(floor(NbLigne * NbColonne / 2)))
+            K = roll(kernel[::-1].reshape(NbLigne * NbColonne), -int(floor(NbLigne * NbColonne / 2)))
 
             ##### ON RECENTRE LE KERNEL...
     elif place == "coin":
 
         if NbLigne % 2 == 0:
-            K = np.roll(kernel.reshape(NbLigne * NbColonne)[::-1], int(NbLigne * NbColonne / 2 - NbLigne / 2))
+            K = roll(kernel.reshape(NbLigne * NbColonne)[::-1], int(NbLigne * NbColonne / 2 - NbLigne / 2))
         else:
-            K = np.roll(kernel.reshape(NbLigne * NbColonne)[::-1], -int(floor(NbLigne * NbColonne / 2)))
+            K = roll(kernel.reshape(NbLigne * NbColonne)[::-1], -int(floor(NbLigne * NbColonne / 2)))
 
             ##### ON FAIT LE PRODUIT DE CONVOLUTION ET ON FILTRE LES BASSES FREQUENCES
     AK = dot(A, K)
-    AK = np.around(AK, decimals=10)
+    AK = around(AK, decimals=10)
 
     ##### ON RETOURNE AK SOUS LA FORME DÉSIRÉE
     if forme == "matrice":
@@ -197,7 +194,7 @@ def conv_matrices(A, kernel, forme="vecteur", place="coin"):
 
     ###### ON S'ASSURE DE LA CONSERVATION DE L'ENERGIE
     #    try:
-    #        assert np.around(sum(A[:,0])/sum(Retour), decimals = 2) == 1
+    #        assert around(sum(A[:,0])/sum(Retour), decimals = 2) == 1
     #    except AssertionError:
     #        print("  !!!!! INTEGRALE(IMAGE) != INTEGRALE(FLOUE) DANS CONV_MATRICES !!!!!! ")
     #
@@ -354,8 +351,8 @@ def mon_image(methode, nom="test_nette"):
         kernel[2, 0] = 70
         kernel[2, 1] = 150
         kernel = kernel / sum(kernel)
-        kernel = np.roll(kernel, -int(floor(NbLigne / 2 + 1)), axis=0)
-        kernel = np.roll(kernel, -int(floor(NbColonne / 2 + 1)), axis=1)
+        kernel = roll(kernel, -int(floor(NbLigne / 2 + 1)), axis=0)
+        kernel = roll(kernel, -int(floor(NbColonne / 2 + 1)), axis=1)
 
         ##### ON DÉFINIT "PSF"
         PSF = zeros((NbLigne, NbColonne))
@@ -363,8 +360,8 @@ def mon_image(methode, nom="test_nette"):
         PSF[0, 0] = PSF[0, 2] = PSF[2, 0] = PSF[2, 2] = 20
         PSF[1, 1] = 255
         PSF = PSF / sum(PSF)
-        PSF = np.roll(PSF, -int(floor(NbLigne / 2 + 2)), axis=0)
-        PSF = np.roll(PSF, -int(floor(NbColonne / 2 + 2)), axis=1)
+        PSF = roll(PSF, -int(floor(NbLigne / 2 + 2)), axis=0)
+        PSF = roll(PSF, -int(floor(NbColonne / 2 + 2)), axis=1)
 
     ######## SI ON VEUT TESTER LA CONVOLUTION ##############
     if methode == "test":

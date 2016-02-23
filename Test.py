@@ -144,7 +144,7 @@ g = np.array([12, 4], dtype="float32")
 f = fg_Rosen(x, g)
 
 print("INPUT:" + str(x))
-opkpy.opk_minimize(x, fg_Rosen, g, algorithm="nlcg", linesearch="cubic", nlcg="HestenesStiefel", bl=0, bu=1e6,
+opkpy_v3.opk_minimize(x, fg_Rosen, g, algorithm="nlcg", linesearch="cubic", nlcg="HestenesStiefel", bl=0, bu=1e6,
                    limited=1)
 print("OUTPUT:" + str(x))
 ###################################################################################
