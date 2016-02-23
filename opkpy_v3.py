@@ -114,12 +114,12 @@ def opk_minimize(x_in, fg, g, bl=NULL, bu=NULL, algorithm="nlcg", linesearch="qu
     """      ---------- DOCUMENT: opk_minimize ----------
         
     The function opk_minimize minimizes a function passed by the user following 
-    a given algorithm, linesearch, etc. It does not return anything but the 
-    value of the current point x is constantly uploaded in parameter x.
+    a given algorithm, linesearch, etc. It keeps x_in untuched and returns 
+    the value of the final point x_out so that f(x_out) = 0
     
     The input arguments are :
-    x --> the starting point of the function. x contains all the variables of 
-          the fonction to minimize in a numpy array of dimension 1, and type 
+    x_in --> the starting point of the function. x contains all the variables 
+          of the fonction to minimize in a numpy array of dimension 1, and type 
           double. Exemple : x = np.array([-1, 1], dtype="double")
     fg--> function which takes two arguments x and gx and which, for the given
           variables x, stores the gradient of the function in gx and returns 
@@ -189,12 +189,12 @@ def opk_minimize(x_in, fg, g, bl=NULL, bu=NULL, algorithm="nlcg", linesearch="qu
              --------------------------------------------"""
 
     # Initialisation of the algorithm
+    print "\n"
     iteration = 0
     evaluation = 0
     task = "OPK_TASK_START"
-    error = False
     x = x_in.copy()
-    x_final = x.copy()
+    x_out = x.copy()
     bound_given = 0
     single = 0
 
@@ -276,9 +276,7 @@ def opk_minimize(x_in, fg, g, bl=NULL, bu=NULL, algorithm="nlcg", linesearch="qu
     task = opkc_v3.Initialisation(x, algorithm, linesearch, autostep, nlcg, 
                                   vmlmb, delta, epsilon, delta_given,
                                   epsilon_given, gatol, grtol, bl, bu, 
-                                  bound_given, mem, powell, single, limited)
-    if verbose != NULL:
-        print("task = ", task)              
+                                  bound_given, mem, powell, single, limited)          
 
 # Beginning of the algorithm
     while True:
@@ -296,15 +294,15 @@ def opk_minimize(x_in, fg, g, bl=NULL, bu=NULL, algorithm="nlcg", linesearch="qu
             break
             # Iterate         
         if verbose != NULL:
-            print "task = ", task  
-            print "f(x) = ", fx
+            print"-----------  iteration n",iteration, ", evaluation n", evaluation, "  -----------"
+           # print "task = ", task  
+           # print "f(x) = ", fx
+            print "x = ", x                
         task = opkc_v3.Iterate(x, fx, g, limited)              
                 
     # Algorithm has converged, solution is available                
     if task == "OPK_TASK_FINAL_X":
-        x_final = x.copy()
-        print("Algorithm has converged, solution is available")
-        print("iteration = ", iteration, "     evaluation = ", evaluation)
+        print"Algorithm has converged in",iteration,"iterations and",evaluation,"evaluation. Solution is available"
     # Algorithm terminated with a warning
     elif task == "OPK_TASK_WARNING":
         print("ERROR : Algorithm terminated with a warning")
@@ -324,6 +322,7 @@ def opk_minimize(x_in, fg, g, bl=NULL, bu=NULL, algorithm="nlcg", linesearch="qu
     else:
         print("ERROR : Unknown problem has occured")
         # Destruction of the optimizer  
+    x_out = x.copy()    
     opkc_v3.Close()   
 
-    return x_final
+    return x_out

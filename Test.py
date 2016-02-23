@@ -125,7 +125,7 @@ def fg(x, gx):
 # pl.matshow(x[0:size].reshape((NbLigne,NbColonne)),cmap=pl.cm.gray)
 # pl.matshow(x[size:2*size].reshape((NbLigne,NbColonne)),cmap=pl.cm.gray)
 
-###################################################################################
+##################################################################################
 
 
 ############################ FONCTION DE ROSENBROCK ############################## 
@@ -138,13 +138,59 @@ def fg_Rosen(x, gx):
     gx[1] = -40 * x[1] * (x[0] * x[0] - x[1] * x[1])
     return Rosenbrock(x)
 
-
-x = np.array([-1.2, 1.0], dtype="float32")
-g = np.array([12, 4], dtype="float32")
+                                                                                
+x = np.array([-1.2, 1.0], dtype="float64")
+g = np.array([12, 4], dtype="float64")
 f = fg_Rosen(x, g)
 
-print("INPUT:" + str(x))
-opkpy.opk_minimize(x, fg_Rosen, g, algorithm="nlcg", linesearch="cubic", nlcg="HestenesStiefel", bl=0, bu=1e6,
-                   limited=1)
-print("OUTPUT:" + str(x))
+
+x_out = opkpy_v3.opk_minimize(x, fg_Rosen, g, algorithm="nlcg", linesearch="quadratic",
+                      nlcg="FletcherReeves", limited=1, verbose=0)      
+print"nlcg, quadratic, FletcherReeves :" + str(x_out) + "\n \n"
+x_out = opkpy_v3.opk_minimize(x, fg_Rosen, g, algorithm="nlcg", linesearch="quadratic",
+                      nlcg="HestenesStiefel", limited=1, verbose=0)      
+print"nlcg, quadratic, HestenesStiefel :" + str(x_out) + "\n \n"
+x_out = opkpy_v3.opk_minimize(x, fg_Rosen, g, algorithm="nlcg", linesearch="quadratic",
+                      nlcg="PolakRibierePolyak", limited=1)      
+print"nlcg, quadratic, PolakRibierePolyak :" + str(x_out) + "\n \n"
+x_out = opkpy_v3.opk_minimize(x, fg_Rosen, g, algorithm="nlcg", linesearch="quadratic",
+                      nlcg="Fletcher", limited=1)      
+print"nlcg, quadratic, Fletcher :" + str(x_out) + "\n \n"
+x_out = opkpy_v3.opk_minimize(x, fg_Rosen, g, algorithm="nlcg", linesearch="quadratic",
+                      nlcg="LiuStorey", limited=1)      
+print"nlcg, quadratic, LiuStorey :" + str(x_out) + "\n \n"
+x_out = opkpy_v3.opk_minimize(x, fg_Rosen, g, algorithm="nlcg", linesearch="quadratic",
+                      nlcg="DaiYuan", limited=1)      
+print"nlcg, quadratic, DaiYuan :" + str(x_out) + "\n \n"
+x_out = opkpy_v3.opk_minimize(x, fg_Rosen, g, algorithm="nlcg", linesearch="quadratic",
+                      nlcg="PerryShanno", limited=1)      
+print"nlcg, quadratic, PerryShanno :" + str(x_out) + "\n \n"
+x_out = opkpy_v3.opk_minimize(x, fg_Rosen, g, algorithm="nlcg", linesearch="quadratic",
+                      nlcg="HagerZhang", limited=1)      
+print"nlcg, quadratic, HagerZhang :" + str(x_out) + "\n \n"
+
 ###################################################################################
+
+################################# PARAMETRES ###################################### 
+# x, f, g
+# bl, bu  ---> only for vmlmb
+###### algorithm
+###### linesearch, autostep
+###### nlcg    ---> only for nlcg
+###### vmlmb   ---> only for vmlmb
+# delta, epsilon
+# gatol, grtol
+# maxiter, maxeval
+# mem     ---> only for vmlmb
+# powell
+# verbose
+###### limited
+
+# possibilites: 4x8x2 + 4x3x2
+
+###################################################################################
+
+
+
+
+
