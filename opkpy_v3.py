@@ -28,8 +28,8 @@
 # *
 # *-----------------------------------------------------------------------------
 
-
 import numpy as np
+import opkc_v3
 
 #############################################################################
 ##  A FAIRE
@@ -251,34 +251,34 @@ def opk_minimize(x, fg, g, bl=NULL, bu=NULL, algorithm="nlcg", linesearch="quadr
         print("WARNING: User specified a search direction for algorithm vmlmb")
 
     ## tests
-    #    task = opkc.Initialisation(x,algorithm,linesearch,autostep,nlcg,vmlmb,
+    #    task = opkc_v3.Initialisation(x,algorithm,linesearch,autostep,nlcg,vmlmb,
     #       delta,epsilon,delta_given, epsilon_given, gatol,grtol,bl,bu,bound_given,mem,powell,single,limited)
     #    print "task = ",task
-    #    task = opkc.Iterate(x,fx,g,limited)
+    #    task = opkc_v3.Iterate(x,fx,g,limited)
     #    print "task = ",task
 
     # Beginning of the algorithm
     while True:
         # Caller must call `start` method
         if task == "OPK_TASK_START":
-            task = opkc.Initialisation(x, algorithm, linesearch, autostep, nlcg, vmlmb, delta, epsilon, delta_given,
+            task = opkc_v3.Initialisation(x, algorithm, linesearch, autostep, nlcg, vmlmb, delta, epsilon, delta_given,
                                        epsilon_given, gatol, grtol, bl, bu, bound_given, mem, powell, single, limited)
             print("task = ", task)
             # Caller must compute f(x) and g(x).
         elif task == "OPK_TASK_COMPUTE_FG":
             fx = fg(x, g)  # Compute f and g
             evaluation += 1  # Increase evaluation
-            task = opkc.Iterate(x, fx, g, limited)  # Iterate
+            task = opkc_v3.Iterate(x, fx, g, limited)  # Iterate
             print("task = ", task)
             # A new iterate is available
         elif task == "OPK_TASK_NEW_X":
             iteration += 1  # Increase iteration
-            task = opkc.Iterate(x, fx, g, limited)  # Iterate
+            task = opkc_v3.Iterate(x, fx, g, limited)  # Iterate
             print("task = ", task)
             # Algorithm has converged, solution is available
         elif task == "OPK_TASK_FINAL_X":
             x_final = x.copy()
-            opkc.Close()
+            opkc_v3.Close()
             print("Algorithm has converged, solution is available")
             print("iteration = ", iteration, "     evaluation = ", evaluation)
             break
