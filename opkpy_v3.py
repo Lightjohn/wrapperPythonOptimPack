@@ -30,6 +30,7 @@
 
 
 import numpy as np
+import opkc_v3
 
 #############################################################################
 ##  A FAIRE
@@ -107,7 +108,7 @@ EPSILON_DEFAULT = 1e-2
 NULL = 0
 
 
-def opk_minimize(x, fg, g, bl=NULL, bu=NULL, algorithm="nlcg", linesearch="quadratic", autostep="ShannoPhua",
+def opk_minimize(x_in, fg, g, bl=NULL, bu=NULL, algorithm="nlcg", linesearch="quadratic", autostep="ShannoPhua",
                  nlcg="FletcherReeves", vmlmb="lbfgs", delta=DELTA_DEFAULT, epsilon=EPSILON_DEFAULT, gatol=1.0e-6,
                  grtol=0.0, maxiter=500, maxeval=500, mem=5, powell=False, verbose=0, limited=NULL):
     """      ---------- DOCUMENT: opk_minimize ----------
@@ -132,21 +133,26 @@ def opk_minimize(x, fg, g, bl=NULL, bu=NULL, algorithm="nlcg", linesearch="quadr
     
     bl --> lower bound for "vmlmb" algorithm. Default value is 0.
     bu --> upper bound for "vmlmb" algorithm. Default value is 1e6.
-    algorithm --> The name of the algorithm chosen to minimise the function.
+    algorithm --> The name of the algorithm chosen to minimize the function.
                   It is a char string. Possible values are :
              "nlcg" --> Non Linear Conjugate Gradient
              "vmlmb" --> Variable Metric Method 
-                Default value is "nlcg"
-    linesearch --> Default value is "quadratic".
+                  Default value is "nlcg"
+    linesearch --> The name of the linesearch chosen to minimize the function.
+                   It is a char string. Possible values are :
              "quadratic" --> 
              "Armijo" --> 
              "cubic" --> 
              "nonmonotone" -->
-    autostep --> Default value is "ShannoPhua".
+                  Default value is "quadratic".
+    autostep --> The name of the autostep chosen to minimize the function.
+                 It is a char string. Possible values are :
              "ShannoPhua" --> 
              "OrenSpedicato" --> 
              "BarzilaiBorwein" --> 
-    nlcg --> Default value is "FletcherReeves".
+                 Default value is "ShannoPhua".
+    nlcg -->  The name of the sub method chosen to minimize the function with 
+              the nlcg algorithm. It is a char string. Possible values are :
              "FletcherReeves" --> 
              "HestenesStiefel" --> 
              "PolakRibierePolyak" --> 
@@ -155,10 +161,13 @@ def opk_minimize(x, fg, g, bl=NULL, bu=NULL, algorithm="nlcg", linesearch="quadr
              "DaiYuan" --> 
              "PerryShanno" --> 
              "HagerZhang" --> 
-    vmlmb --> Default value is "lbfgs".
+              Default value is "FletcherReeves".
+    vmlmb --> The name of the sub method chosen to minimize the function with 
+              the vmlmb algorithm. It is a char string. Possible values are :
              "blmvm" --> 
              "vmlmb" --> 
              "lbfgs" --> 
+              Default value is "lbfgs".             
     delta --> Relative size for a small step. Default value is 5e-2.
     epsilon --> Threshold to accept descent direction. Default value is 1e-2.
     gatol --> Absolute threshold for the norm or the projected gradient for 
@@ -184,11 +193,12 @@ def opk_minimize(x, fg, g, bl=NULL, bu=NULL, algorithm="nlcg", linesearch="quadr
     evaluation = 0
     task = "OPK_TASK_START"
     error = False
+    x = x_in.copy()
     x_final = x.copy()
     bound_given = 0
     single = 0
 
-    # Tests to check the type of the entries
+# Tests to check the type of the entries
     # size of x
     if (isinstance(x, np.ndarray) == False) or (len(x.shape) != 1):
         print("ERROR : x must be of type numpy.ndarray and of dimension 1")
@@ -211,7 +221,7 @@ def opk_minimize(x, fg, g, bl=NULL, bu=NULL, algorithm="nlcg", linesearch="quadr
         print("ERROR :g must be of type numpy.ndarray  and of dimension 1")
         task = "INPUT_ERROR"
 
-    # Input arguments
+# Input arguments
     # Delta
     if delta != DELTA_DEFAULT:
         delta_given = 1
@@ -248,69 +258,72 @@ def opk_minimize(x, fg, g, bl=NULL, bu=NULL, algorithm="nlcg", linesearch="quadr
         task = "INPUT_ERROR"
         # nlcg
     if (algorithm != "nlcg") and (nlcg != "FletcherReeves"):
-        print("WARNING: User specified a search direction for algorithm vmlmb")
-
+        print("WARNING: User specified a search direction for algorithm nlcg \
+              but is running algorithm vmlmb")
+    if (algorithm != "vmlmb") and (vmlmb != "lbfgs"):
+        print("WARNING: User specified a search direction for algorithm vmlmb \
+              but is running algorithm nlcg")
+              
     ## tests
-    #    task = opkc.Initialisation(x,algorithm,linesearch,autostep,nlcg,vmlmb,
+    #    task = opkc_v3.Initialisation(x,algorithm,linesearch,autostep,nlcg,vmlmb,
     #       delta,epsilon,delta_given, epsilon_given, gatol,grtol,bl,bu,bound_given,mem,powell,single,limited)
     #    print "task = ",task
-    #    task = opkc.Iterate(x,fx,g,limited)
+    #    task = opkc_v3.Iterate(x,fx,g,limited)
     #    print "task = ",task
+ 
+ 
+# Initialization             
+    task = opkc_v3.Initialisation(x, algorithm, linesearch, autostep, nlcg, 
+                                  vmlmb, delta, epsilon, delta_given,
+                                  epsilon_given, gatol, grtol, bl, bu, 
+                                  bound_given, mem, powell, single, limited)
+    if verbose != NULL:
+        print("task = ", task)              
 
-    # Beginning of the algorithm
+# Beginning of the algorithm
     while True:
-        # Caller must call `start` method
-        if task == "OPK_TASK_START":
-            task = opkc.Initialisation(x, algorithm, linesearch, autostep, nlcg, vmlmb, delta, epsilon, delta_given,
-                                       epsilon_given, gatol, grtol, bl, bu, bound_given, mem, powell, single, limited)
-            print("task = ", task)
             # Caller must compute f(x) and g(x).
-        elif task == "OPK_TASK_COMPUTE_FG":
-            fx = fg(x, g)  # Compute f and g
-            evaluation += 1  # Increase evaluation
-            task = opkc.Iterate(x, fx, g, limited)  # Iterate
-            print("task = ", task)
+        if (task == "OPK_TASK_COMPUTE_FG") and (iteration < maxiter) and \
+           (evaluation < maxeval) :
+            evaluation += 1          
+            fx = fg(x, g)  
             # A new iterate is available
-        elif task == "OPK_TASK_NEW_X":
-            iteration += 1  # Increase iteration
-            task = opkc.Iterate(x, fx, g, limited)  # Iterate
-            print("task = ", task)
-            # Algorithm has converged, solution is available
-        elif task == "OPK_TASK_FINAL_X":
-            x_final = x.copy()
-            opkc.Close()
-            print("Algorithm has converged, solution is available")
-            print("iteration = ", iteration, "     evaluation = ", evaluation)
+        elif (task == "OPK_TASK_NEW_X") and (iteration < maxiter) and \
+             (evaluation < maxeval) :
+            iteration += 1  
+            # end of the process
+        else :
             break
-            # Algorithm terminated with a warning
-        elif task == "OPK_TASK_WARNING":
-            print("Algorithm terminated with a warning")
-            error = True
-            # An error has ocurred
-        elif task == "OPK_TASK_ERROR":
-            print("ERROR :OPK_TASK_ERROR has occured")
-            error = True
-            # Error in the variable input
-        elif task == "INPUT_ERROR":
-            print("ERROR :Input error, check all the input of function optimize")
-            error = True
-            # Unknown task has been asked
-        else:
-            print("ERROR :Unknown task has been asked")
-            error = True
-            # An error has occured
-        if error:
-            break
-            # Too much iterations, check OPK_TASK_NEW_X
-        if iteration >= maxiter:
-            print("Too much iteration\n")
-            print("iteration = ", iteration, "     evaluation = ", evaluation)
-            break
-            # Too much evaluation of f and g, check OPK_TASK_COMPUTE_FG
-        if evaluation >= maxeval:
-            print("Too much evaluation\n")
-            print("iteration = ", iteration, "     evaluation = ", evaluation)
-            break
+            # Iterate         
+        if verbose != NULL:
+            print "task = ", task  
+            print "f(x) = ", fx
+        task = opkc_v3.Iterate(x, fx, g, limited)              
+                
+    # Algorithm has converged, solution is available                
+    if task == "OPK_TASK_FINAL_X":
+        x_final = x.copy()
+        print("Algorithm has converged, solution is available")
+        print("iteration = ", iteration, "     evaluation = ", evaluation)
+    # Algorithm terminated with a warning
+    elif task == "OPK_TASK_WARNING":
+        print("ERROR : Algorithm terminated with a warning")
+        # An error has ocurred
+    elif task == "OPK_TASK_ERROR":
+        print("ERROR : OPK_TASK_ERROR has occured")
+        # Error in the variable input
+    elif task == "INPUT_ERROR":
+        print("ERROR : Input error, check all the input of function optimize")
+        # Too much iterations, check OPK_TASK_NEW_X
+    elif iteration >= maxiter:
+        print("WARNING : Too much iteration\n")
+        # Too much evaluation of f and g, check OPK_TASK_COMPUTE_FG
+    elif evaluation >= maxeval:
+        print("WARNING : Too much evaluation\n")
+        # Unknown problem has occured
+    else:
+        print("ERROR : Unknown problem has occured")
+        # Destruction of the optimizer  
+    opkc_v3.Close()   
 
-        print(" f(x) = ", fx)
     return x_final
