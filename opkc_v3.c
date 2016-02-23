@@ -1,3 +1,4 @@
+// Fichier indenté avec: indent -i4 -nut -br -ce -npcs NomFichier.c
 #include <Python.h>
 #include <numpy/arrayobject.h>
 #include <math.h>
@@ -9,16 +10,16 @@
 
 /*  -------------------------- ON DEFINIT LES VARIABLES GLOBALES --------------------------- */
 // L'Espace
-opk_vspace_t *vspace;		
+opk_vspace_t *vspace;
 
 // Les Vecteurs d'espace : ils changent mais on ne les declare qu'une fois
-opk_vector_t *vgp;		// Mon Projected Gradient Vector
-opk_vector_t *vx; 	        // Mes vecteurs d'entree
+opk_vector_t *vgp;              // Mon Projected Gradient Vector
+opk_vector_t *vx;               // Mes vecteurs d'entree
 opk_vector_t *vg;               // Le gradient en x
 
 // La Tache : elle change tout le temps et determine ce qu'il faut faire
 opk_task_t task;
-		
+
 
 // Les Optimiseurs 
 const char *algorithm_name = "vmlmb"; 	// Le nom de l'optimiseur
@@ -41,7 +42,8 @@ opk_index_t problem_size;
 ------------------------------- FONCTION INITIALISATION -------------------------------------
 --------------------------------------------------------------------------------------------- */
 
-static PyObject *Initialisation (PyObject * self, PyObject * args, PyObject * keywds)
+static PyObject *
+Initialisation(PyObject * self, PyObject * args, PyObject * keywds)
 {
 
 //  ------------------------------------- DECLARATIONS --------------------------------------
@@ -49,20 +51,19 @@ static PyObject *Initialisation (PyObject * self, PyObject * args, PyObject * ke
 #define FALSE 0
 
 // Si j'ai besoin de voir
- FILE* fichier = NULL;
+    FILE *fichier = NULL;
     fichier = fopen("text.txt", "w");
-    if (fichier == NULL)
-    {
-	return Py_None;
+    if (fichier == NULL) {
+        return Py_None;
     }
     fprintf(fichier, "repere1 \n");
 
 
 // On declare les vrai valeur des entrees. Elles contiendront ce qui est demande par l'utilisateur
-    opk_lnsrch_t *lnsrch = NULL;   
+    opk_lnsrch_t *lnsrch = NULL;
     int autostep = 0;
-    unsigned int nlcg_method = OPK_NLCG_DEFAULT; 
-    unsigned int vmlmb_method = OPK_LBFGS; 	// 	OPK_LBFGS, OPK_VMLMB, OPK_BLMVM	
+    unsigned int nlcg_method = OPK_NLCG_DEFAULT;
+    unsigned int vmlmb_method = OPK_LBFGS;      //      OPK_LBFGS, OPK_VMLMB, OPK_BLMVM 
     unsigned int limited_method = nlcg_method;
 
 // On declare les variables c qui serviront d'argument d'entree
@@ -71,41 +72,42 @@ static PyObject *Initialisation (PyObject * self, PyObject * args, PyObject * ke
     char *autostep_name = "ShannoPhua";
     char *nlcgmeth_name = "FletcherReeves";
     char *vmlmbmeth_name = "OPK_LBFGS";
-    double delta;					// pas besoin de valeur par defaut
-    double epsilon;					// pas besoin de valeur par defaut
-    int delta_given;					// pas besoin de valeur par defaut
-    int epsilon_given;					// pas besoin de valeur par defaut
-    double gatol = 1.0e-6;     
-    double grtol = 0.0;         
-    double bl = 0;					// 0        On prend la valeur 
-    double bu = 1e6;					// 1e6     donnee si l'algorithm 
-    int bound_given = 0;				// pas de bound de base
-    int mem = 5;					// 5            est vmlmb
+    double delta;               // pas besoin de valeur par defaut
+    double epsilon;             // pas besoin de valeur par defaut
+    int delta_given;            // pas besoin de valeur par defaut
+    int epsilon_given;          // pas besoin de valeur par defaut
+    double gatol = 1.0e-6;
+    double grtol = 0.0;
+    double bl = 0;              // 0        On prend la valeur 
+    double bu = 1e6;            // 1e6     donnee si l'algorithm 
+    int bound_given = 0;        // pas de bound de base
+    int mem = 5;                // 5            est vmlmb
     int powell = FALSE;
     int single = FALSE;
 
 // On rajoute x
-    PyObject *x_obj=NULL;
-    PyObject *x_arr=NULL;
+    PyObject *x_obj = NULL;
+    PyObject *x_arr = NULL;
 
 // On declare d'autres variables locales
-    opk_vector_t *vbl;					// bounds	
-    opk_vector_t *vbu;					// bounds
-    double sftol = 1e-4;				// Valeurs pour linesearch
-    double sgtol = 0.9;					// Valeurs pour linesearch
-    double sxtol = 1e-15;				// Valeurs pour linesearch
-    double samin = 0.1;					// Valeurs pour linesearch		
-    opk_bound_t *lower;					// Les Bords
-    opk_bound_t *upper;					// Les Bords
-    
+    opk_vector_t *vbl;          // bounds       
+    opk_vector_t *vbu;          // bounds
+    double sftol = 1e-4;        // Valeurs pour linesearch
+    double sgtol = 0.9;         // Valeurs pour linesearch
+    double sxtol = 1e-15;       // Valeurs pour linesearch
+    double samin = 0.1;         // Valeurs pour linesearch              
+    opk_bound_t *lower;         // Les Bords
+    opk_bound_t *upper;         // Les Bords
+
 
 // On declare la valeur de retour
-    PyObject * task_py;
+    PyObject *task_py;
     fprintf(fichier, "repere2 \n");
 //  -----------------------------------------------------------------------------------------
 
 
 //  --------------------- ON CONVERTIT LES OBJETS PYTHON EN OBJET C ------------------------- 
+
 /*
  i = int
  s = string
@@ -114,143 +116,154 @@ static PyObject *Initialisation (PyObject * self, PyObject * args, PyObject * ke
  p = predicate (bool) = int
  | = other arguments are optionals
 */
-    static char *kwlist[] = 
-    {"x", "algorithm", "linesearch", "autostep", "nlcg", "vmlmb", "delta", "epsilon", "delta_given", "epsilon_given", "gatol", "grtol", "bl", "bu", "bound_given", "mem", "powell", "single", "limited", NULL};
+    static char *kwlist[] =
+        { "x", "algorithm", "linesearch", "autostep", "nlcg", "vmlmb",
+        "delta", "epsilon", "delta_given", "epsilon_given", "gatol", "grtol",
+            "bl", "bu",
+        "bound_given", "mem", "powell", "single", "limited", NULL
+    };
 
-    if (!PyArg_ParseTupleAndKeywords (args, keywds, "Osssssddiiddddiiiii", kwlist, &x_obj, &algorithm_name, &linesrch_name, &autostep_name, &nlcgmeth_name, &vmlmbmeth_name, &delta, &epsilon, &delta_given, &epsilon_given, &gatol, &grtol, &bl, &bu, &bound_given, &mem, &powell, &single, &limited))
-    {
-	return NULL;
+    if (!PyArg_ParseTupleAndKeywords
+        (args, keywds, "Osssssddiiddddiiiii", kwlist, &x_obj, &algorithm_name,
+         &linesrch_name, &autostep_name, &nlcgmeth_name, &vmlmbmeth_name,
+         &delta, &epsilon, &delta_given, &epsilon_given, &gatol, &grtol, &bl,
+         &bu, &bound_given, &mem, &powell, &single, &limited)) {
+        return NULL;
     }
     fprintf(fichier, "repere3 \n");
 //  -----------------------------------------------------------------------------------------
 
 
 //  ----------------------------- ON DECRIT VSPACE GRACE A X -------------------------------- 
-    if (x_obj == NULL) 
-        {return NULL;}
-    if (single == FALSE)
-        {x_arr  = PyArray_FROM_OTF(x_obj,  NPY_DOUBLE, NPY_IN_ARRAY);}
-    else 
-        {x_arr  = PyArray_FROM_OTF(x_obj,  NPY_FLOAT, NPY_IN_ARRAY);}
-    if (x_arr == NULL) 
-	{return NULL;}
+    if (x_obj == NULL) {
+        return NULL;
+    }
+    // FIXME get single value trough  PyArray_IsPythonNumber(NPY_FLOAT), do not ask user for this value
+    if (single == FALSE) {
+        x_arr = PyArray_FROM_OTF(x_obj, NPY_DOUBLE, NPY_IN_ARRAY);
+    } else {
+        x_arr = PyArray_FROM_OTF(x_obj, NPY_FLOAT, NPY_IN_ARRAY);
+    }
+    if (x_arr == NULL) {
+        return NULL;
+    }
 
-    int nd = PyArray_NDIM(x_arr);   
+    int nd = PyArray_NDIM(x_arr);
     npy_intp *shape = PyArray_DIMS(x_arr);
     problem_size = shape[0];
-    if(nd != 1) 
-    {
+    if (nd != 1) {
         printf("We need 1D arrays");
         return NULL;
     }
-    if (single == FALSE)
-        {x  = (double*)PyArray_DATA(x_arr);}
-    else
-        {x  = (float*)PyArray_DATA(x_arr);}
+    if (single == FALSE) {
+        x = (double *) PyArray_DATA(x_arr);
+    } else {
+        x = (float *) PyArray_DATA(x_arr);
+    }
 
-    if (x == NULL) 
-    	{return NULL;}
+    if (x == NULL) {
+        return NULL;
+    }
 //  -----------------------------------------------------------------------------------------
 
 
 //  -------------------- ON REMPLIT LNSRCH, AUTOSTEP, NLCG ET VMLMB -------------------------
 // LINESEARCH
-    if (strcasecmp (linesrch_name, "quadratic") == 0) 
-        {lnsrch = opk_lnsrch_new_backtrack (sftol, samin);}
-    else if (strcasecmp (linesrch_name, "armijo") == 0) 
-        {lnsrch = opk_lnsrch_new_backtrack (sftol, 0.5);}
-    else if (strcasecmp (linesrch_name, "cubic") == 0)
-        {lnsrch = opk_lnsrch_new_csrch (sftol, sgtol, sxtol);}
-    else if (strcasecmp (linesrch_name, "nonmonotone") == 0)
-	{lnsrch = opk_lnsrch_new_nonmonotone(mem, 1e-4, 0.1, 0.9);}
-    else 
-    {
-        printf ("# Unknown line search method\n");
-	lnsrch = NULL;
+    if (strcasecmp(linesrch_name, "quadratic") == 0) {
+        lnsrch = opk_lnsrch_new_backtrack(sftol, samin);
+    } else if (strcasecmp(linesrch_name, "Armijo") == 0) {
+        lnsrch = opk_lnsrch_new_backtrack(sftol, 0.5);
+    } else if (strcasecmp(linesrch_name, "cubic") == 0) {
+        lnsrch = opk_lnsrch_new_csrch(sftol, sgtol, sxtol);
+    } else if (strcasecmp(linesrch_name, "nonmonotone") == 0) {
+        lnsrch = opk_lnsrch_new_nonmonotone(mem, 1e-4, 0.1, 0.9);
+    } else {
+        printf("# Unknown line search method\n");
+        lnsrch = NULL;
         return NULL;
     }
 
 // AUTOSTEP
-    if (strcasecmp (autostep_name, "ShannoPhua") == 0) 
-        {autostep = OPK_NLCG_SHANNO_PHUA;}
+    if (strcasecmp(autostep_name, "ShannoPhua") == 0) {
+        autostep = OPK_NLCG_SHANNO_PHUA;
+    }
+
 /*
     else if (strcasecmp (autostep_name, "OrenSpedicato") == 0) 
         {autostep = OPK_NLCG_OREN_SPEDICATO;}
     else if (strcasecmp (autostep_name, "BarzilaiBorwein") == 0) 
         {autostep = OPK_NLCG_BARZILAI_BORWEIN;}
 */
-    else 
-    {
-        printf ("# Unknown line search method\n");
+    else {
+        printf("# Unknown line search method\n");
         return NULL;
     }
 
 // NLCG METHOD
-    if (strcasecmp (nlcgmeth_name, "FletcherReeves") == 0) 
-        {nlcg_method = OPK_NLCG_FLETCHER_REEVES;}
-    else if (strcasecmp (nlcgmeth_name, "HestenesStiefel") == 0) 
-        {nlcg_method = OPK_NLCG_HESTENES_STIEFEL;}
-    else if (strcasecmp (nlcgmeth_name, "PolakRibierePolyak") == 0) 
-        {nlcg_method = OPK_NLCG_POLAK_RIBIERE_POLYAK;}
-    else if (strcasecmp (nlcgmeth_name, "Fletcher") == 0) 
-        {nlcg_method = OPK_NLCG_FLETCHER;}
-    else if (strcasecmp (nlcgmeth_name, "LiuStorey") == 0) 
-        {nlcg_method = OPK_NLCG_LIU_STOREY;}
-    else if (strcasecmp (nlcgmeth_name, "DaiYuan") == 0) 
-        {nlcg_method = OPK_NLCG_DAI_YUAN;}
-    else if (strcasecmp (nlcgmeth_name, "PerryShanno") == 0) 
-        {nlcg_method = OPK_NLCG_PERRY_SHANNO;}
-    else if (strcasecmp (nlcgmeth_name, "HagerZhang") == 0) 
-        {nlcg_method = OPK_NLCG_HAGER_ZHANG;}
-    else 
-    {
-        printf ("# Unknown line search method for nlcg\n");
+    if (strcasecmp(nlcgmeth_name, "FletcherReeves") == 0) {
+        nlcg_method = OPK_NLCG_FLETCHER_REEVES;
+    } else if (strcasecmp(nlcgmeth_name, "HestenesStiefel") == 0) {
+        nlcg_method = OPK_NLCG_HESTENES_STIEFEL;
+    } else if (strcasecmp(nlcgmeth_name, "PolakRibierePolyak") == 0) {
+        nlcg_method = OPK_NLCG_POLAK_RIBIERE_POLYAK;
+    } else if (strcasecmp(nlcgmeth_name, "Fletcher") == 0) {
+        nlcg_method = OPK_NLCG_FLETCHER;
+    } else if (strcasecmp(nlcgmeth_name, "LiuStorey") == 0) {
+        nlcg_method = OPK_NLCG_LIU_STOREY;
+    } else if (strcasecmp(nlcgmeth_name, "DaiYuan") == 0) {
+        nlcg_method = OPK_NLCG_DAI_YUAN;
+    } else if (strcasecmp(nlcgmeth_name, "PerryShanno") == 0) {
+        nlcg_method = OPK_NLCG_PERRY_SHANNO;
+    } else if (strcasecmp(nlcgmeth_name, "HagerZhang") == 0) {
+        nlcg_method = OPK_NLCG_HAGER_ZHANG;
+    } else {
+        printf("# Unknown line search method for nlcg\n");
         return NULL;
     }
 
 // VLMLB METHOD
-    if (strcasecmp (vmlmbmeth_name, "blmvm") == 0) 
-        {vmlmb_method = OPK_BLMVM;}
-    else if (strcasecmp (vmlmbmeth_name, "vmlmb") == 0) 
-        {vmlmb_method = OPK_VMLMB;}
-    else if (strcasecmp (vmlmbmeth_name, "lbfgs") == 0) 
-        {vmlmb_method = OPK_LBFGS;}
-    else 
-    {
-        printf ("# Unknown line search method for vmlmb\n");
+    if (strcasecmp(vmlmbmeth_name, "blmvm") == 0) {
+        vmlmb_method = OPK_BLMVM;
+    } else if (strcasecmp(vmlmbmeth_name, "vmlmb") == 0) {
+        vmlmb_method = OPK_VMLMB;
+    } else if (strcasecmp(vmlmbmeth_name, "lbfgs") == 0) {
+        vmlmb_method = OPK_LBFGS;
+    } else {
+        printf("# Unknown line search method for vmlmb\n");
         return NULL;
     }
 
 // type of the variable
-if (single == TRUE)
-	{type = OPK_FLOAT;}
-else
-	{type = OPK_DOUBLE;}
+    if (single == TRUE) {
+        type = OPK_FLOAT;
+    } else {
+        type = OPK_DOUBLE;
+    }
 
 //  -----------------------------------------------------------------------------------------
 
 
 //  ------------------------ COMPARAISON BIT A BIT, JE SAIS PAS TROP ------------------------
-    if (powell) 
-        {nlcg_method |= OPK_NLCG_POWELL;}
-    if (autostep != 0) 
-        {nlcg_method |= autostep;}
+    if (powell) {
+        nlcg_method |= OPK_NLCG_POWELL;
+    }
+    if (autostep != 0) {
+        nlcg_method |= autostep;
+    }
 //  -----------------------------------------------------------------------------------------
 
 
 //  --------------------------------- CONSTRUCTION DE VSPACE -------------------------------- 
 // Shape ne depend que de x_arr
-    vspace = opk_new_simple_double_vector_space (problem_size);  
-    if (vspace == NULL) 
-    {
-        printf ("# Failed to allocate vector space\n");
+    vspace = opk_new_simple_double_vector_space(problem_size);
+    if (vspace == NULL) {
+        printf("# Failed to allocate vector space\n");
         return NULL;
     }
 // On transforme x en vecteur de l'espace qu'on cree. Ils ne changent pas (juste le type)
-    vx = opk_wrap_simple_double_vector (vspace, x, NULL, x); // normalement free au lieu de NULL
-    if (vx == NULL) 
-    {
-       	printf ("# Failed to wrap vectors\n");
+    vx = opk_wrap_simple_double_vector(vspace, x, NULL, x);     // normalement free au lieu de NULL
+    if (vx == NULL) {
+        printf("# Failed to wrap vectors\n");
         return NULL;
     }
 //  -----------------------------------------------------------------------------------------
@@ -258,53 +271,41 @@ else
 
 //  -------------------------------- CONSTRUCTION DES BOUNDS -------------------------------- 
 // Declare quoi qu'il en soit parce qu'on le drop a la fin de la fonction
-    if (single == TRUE)
-	{
-	bl = (float)(bl);
-	bu = (float)(bu);
-	}
-    vbl = opk_wrap_simple_double_vector (vspace, &bl,NULL, &bl);
-    vbu = opk_wrap_simple_double_vector (vspace, &bu, NULL, &bu);
+    if (single == TRUE) {
+        bl = (float) (bl);
+        bu = (float) (bu);
+    }
+    vbl = opk_wrap_simple_double_vector(vspace, &bl, NULL, &bl);
+    vbu = opk_wrap_simple_double_vector(vspace, &bu, NULL, &bu);
 // Si l'utilisateur veut des bounds (1 = lower, 2 = upper, 3 = les deux)
-    if (bound_given == 1)
-    {
-        lower = opk_new_bound (vspace, OPK_BOUND_VECTOR, vbl);
-        if (lower == NULL)
-        {
-            printf ("# Failed to wrap lower bounds\n");
+    if (bound_given == 1) {
+        lower = opk_new_bound(vspace, OPK_BOUND_VECTOR, vbl);
+        if (lower == NULL) {
+            printf("# Failed to wrap lower bounds\n");
             return NULL;
         }
-	upper = NULL;
-    }
-    else if (bound_given == 2)
-    {
-        upper = opk_new_bound (vspace, OPK_BOUND_VECTOR, vbu);
-        if (upper == NULL) 
-        {
-            printf ("# Failed to wrap upper bounds\n");
+        upper = NULL;
+    } else if (bound_given == 2) {
+        upper = opk_new_bound(vspace, OPK_BOUND_VECTOR, vbu);
+        if (upper == NULL) {
+            printf("# Failed to wrap upper bounds\n");
             return NULL;
         }
-	lower = NULL;
-    }
-    else if (bound_given == 3)
-    {
-	lower = opk_new_bound (vspace, OPK_BOUND_VECTOR, vbl);
-        upper = opk_new_bound (vspace, OPK_BOUND_VECTOR, vbu);
-        if (lower == NULL)
-        {
-            printf ("# Failed to wrap lower bounds\n");
+        lower = NULL;
+    } else if (bound_given == 3) {
+        lower = opk_new_bound(vspace, OPK_BOUND_VECTOR, vbl);
+        upper = opk_new_bound(vspace, OPK_BOUND_VECTOR, vbu);
+        if (lower == NULL) {
+            printf("# Failed to wrap lower bounds\n");
             return NULL;
         }
-        if (upper == NULL) 
-        {
-            printf ("# Failed to wrap upper bounds\n");
+        if (upper == NULL) {
+            printf("# Failed to wrap upper bounds\n");
             return NULL;
         }
-    }
-    else 
-    {
-	lower = NULL;
-	upper = NULL;
+    } else {
+        lower = NULL;
+        upper = NULL;
     }
 
     fprintf(fichier, "repere6 \n");
@@ -313,121 +314,113 @@ else
 
 //  -------------------------------- CREATION DE L'OPTIMISEUR ------------------------------- 
 // On cree notre optimiseur et notre tache en fonction de l'algo choisi
-    if (limited == 0)
-    {
+    if (limited == 0) {
 
 // VMLMB --------------------------------
-    	if (strcasecmp (algorithm_name, "vmlmb") == 0) 
-    	{
-	     // Creation de l'optimiseur
-             vmlmb = opk_new_vmlmb_optimizer (vspace, mem, vmlmb_method, lower, upper, lnsrch);
-             if (vmlmb == NULL) 
-             {
-                 printf ("# Failed to create VMLMB optimizer\n");
-                 return NULL;
-             }
+        if (strcasecmp(algorithm_name, "vmlmb") == 0) {
+            // Creation de l'optimiseur
+            vmlmb =
+                opk_new_vmlmb_optimizer(vspace, mem, vmlmb_method, lower,
+                                        upper, lnsrch);
+            if (vmlmb == NULL) {
+                printf("# Failed to create VMLMB optimizer\n");
+                return NULL;
+            }
+            // creation de vgp
+            vgp = opk_vcreate(vspace);
+            if (vgp == NULL) {
+                printf("# Failed to create projected gradient vector\n");
+                return NULL;
+            }
+            // option.gatol = gatol? sinon la valeur recue de gatol est perdu?
+            opk_get_vmlmb_options(&options_vmlmb, vmlmb);
+            options_vmlmb.gatol = grtol;
+            options_vmlmb.grtol = gatol;
+            if (delta_given) {
+                options_vmlmb.delta = delta;
+            }
+            if (epsilon_given) {
+                options_vmlmb.epsilon = epsilon;
+            }
+            if (opk_set_vmlmb_options(vmlmb, &options_vmlmb) != OPK_SUCCESS) {
+                printf("# Bad VMLMB options\n");
+                return NULL;
+            }
+            //const char *coucou = opk_get_vmlmb_method_name(vmlmb);
+            //fprintf(fichier, "Nom de la methode : %s \n", coucou );
+            //task = opk_start_vmlmb (vmlmb, vx);
 
-          	// creation de vgp
-             vgp = opk_vcreate (vspace);
-             if (vgp == NULL) 
-             {
-                 printf ("# Failed to create projected gradient vector\n");
-                 return NULL;
-             }
-          	// option.gatol = gatol? sinon la valeur recue de gatol est perdu?
-             opk_get_vmlmb_options (&options_vmlmb, vmlmb);
-             options_vmlmb.gatol = grtol;
-             options_vmlmb.grtol = gatol;
-             if (delta_given) 
-                 {options_vmlmb.delta = delta;}
-             if (epsilon_given) 
-          	    {options_vmlmb.epsilon = epsilon;}
-             if (opk_set_vmlmb_options (vmlmb, &options_vmlmb) != OPK_SUCCESS) 
-          	{
-                 printf ("# Bad VMLMB options\n");
-                 return NULL;
-             }
-
-	     //const char *coucou = opk_get_vmlmb_method_name(vmlmb);
-	     //fprintf(fichier, "Nom de la methode : %s \n", coucou );
-             //task = opk_start_vmlmb (vmlmb, vx);
-
-         }
+        }
 // NLCG ---------------------------------  
-         else if (strcasecmp (algorithm_name, "nlcg") == 0)  
-         {
-           	nlcg = opk_new_nlcg_optimizer (vspace, nlcg_method, lnsrch);
-             if (nlcg == NULL) 
-	     {
-                 printf ("# Failed to create NLCG optimizer\n");
-                 return NULL;
-	     }
+        else if (strcasecmp(algorithm_name, "nlcg") == 0) {
+            nlcg = opk_new_nlcg_optimizer(vspace, nlcg_method, lnsrch);
+            if (nlcg == NULL) {
+                printf("# Failed to create NLCG optimizer\n");
+                return NULL;
+            }
 
-             opk_get_nlcg_options (&options_nlcg, nlcg);
-             options_nlcg.gatol = gatol;
-             options_nlcg.grtol = grtol;
-             if (delta_given) 
-	         {options_nlcg.delta = delta;}
-             if (epsilon_given) 
-                 {options_nlcg.epsilon = epsilon;}
-             if (opk_set_nlcg_options (nlcg, &options_nlcg) != OPK_SUCCESS)
-	     {
-                 printf ("# Bad NLCG options\n");
-                 return NULL;
-             }
-             task = opk_start_nlcg (nlcg, vx);
-         }
+            opk_get_nlcg_options(&options_nlcg, nlcg);
+            options_nlcg.gatol = gatol;
+            options_nlcg.grtol = grtol;
+            if (delta_given) {
+                options_nlcg.delta = delta;
+            }
+            if (epsilon_given) {
+                options_nlcg.epsilon = epsilon;
+            }
+            if (opk_set_nlcg_options(nlcg, &options_nlcg) != OPK_SUCCESS) {
+                printf("# Bad NLCG options\n");
+                return NULL;
+            }
+            task = opk_start_nlcg(nlcg, vx);
+        }
 
-         else 
-         {
-             printf ("# Bad algorithm\n");
-             return NULL;
-         }
+        else {
+            printf("# Bad algorithm\n");
+            return NULL;
+        }
     }
-
 // Limited Memory ---------------------------------  
 
-    else
-    {
-	opk_algorithm_t limited_algorithm;
-	if (strcasecmp (algorithm_name, "nlcg") == 0) 
-	{
-	     limited_algorithm = OPK_ALGORITHM_NLCG;
-	     limited_method = nlcg_method;
-	}
-	else if (strcasecmp (algorithm_name, "vmlmb") == 0) 
-	{
-	     limited_algorithm = OPK_ALGORITHM_VMLMB;
-	     limited_method = vmlmb_method;
-	}
-        else 
-        {
-             printf ("# Bad algorithm\n");
-             return NULL;
-        }
-	// optimiseur
-	if (bound_given == 1)
-	{
- 		limited_optimizer = opk_new_optimizer (limited_algorithm, type, shape[0], mem, limited_method, type, &bl, OPK_BOUND_NONE, NULL, lnsrch);	
-	}
-	else if (bound_given == 2)
-	{ 
-		limited_optimizer = opk_new_optimizer (limited_algorithm, type, shape[0], mem, limited_method, OPK_BOUND_NONE, NULL, type, &bu, lnsrch);
-	}
-	else if (bound_given == 3)
-	{ 
-		limited_optimizer = opk_new_optimizer (limited_algorithm, type, shape[0], mem, limited_method, type, &bl, type, &bu, lnsrch);
-	}
-	else
-	{
- 		limited_optimizer = opk_new_optimizer (limited_algorithm, type, shape[0], mem, limited_method, OPK_BOUND_NONE, NULL, OPK_BOUND_NONE, NULL, lnsrch);
-	}
-
-        if (limited_optimizer == NULL) 
-	{
-            printf ("# Failed to create limited optimizer\n");
+    else {
+        opk_algorithm_t limited_algorithm;
+        if (strcasecmp(algorithm_name, "nlcg") == 0) {
+            limited_algorithm = OPK_ALGORITHM_NLCG;
+            limited_method = nlcg_method;
+        } else if (strcasecmp(algorithm_name, "vmlmb") == 0) {
+            limited_algorithm = OPK_ALGORITHM_VMLMB;
+            limited_method = vmlmb_method;
+        } else {
+            printf("# Bad algorithm\n");
             return NULL;
-	}
+        }
+        // optimiseur
+        if (bound_given == 1) {
+            limited_optimizer =
+                opk_new_optimizer(limited_algorithm, type, shape[0], mem,
+                                  limited_method, type, &bl, OPK_BOUND_NONE,
+                                  NULL, lnsrch);
+        } else if (bound_given == 2) {
+            limited_optimizer =
+                opk_new_optimizer(limited_algorithm, type, shape[0], mem,
+                                  limited_method, OPK_BOUND_NONE, NULL, type,
+                                  &bu, lnsrch);
+        } else if (bound_given == 3) {
+            limited_optimizer =
+                opk_new_optimizer(limited_algorithm, type, shape[0], mem,
+                                  limited_method, type, &bl, type, &bu,
+                                  lnsrch);
+        } else {
+            limited_optimizer =
+                opk_new_optimizer(limited_algorithm, type, shape[0], mem,
+                                  limited_method, OPK_BOUND_NONE, NULL,
+                                  OPK_BOUND_NONE, NULL, lnsrch);
+        }
+
+        if (limited_optimizer == NULL) {
+            printf("# Failed to create limited optimizer\n");
+            return NULL;
+        }
 
         task = opk_start(limited_optimizer, type, shape[0], x);
     }
@@ -437,29 +430,33 @@ else
     fprintf(fichier, "repere7 \n");
 
 // Free workspace 
-    OPK_DROP (vbl);
-    OPK_DROP (vbu);
+    OPK_DROP(vbl);
+    OPK_DROP(vbu);
 
     fprintf(fichier, "repere8 \n");
     fclose(fichier);
 
 // Return value is OPK_TASK_COMPUTE_FG
-    if (task == OPK_TASK_COMPUTE_FG)
-    	{task_py = Py_BuildValue("s","OPK_TASK_COMPUTE_FG");}
-    else if (task == OPK_TASK_START)
-    	{task_py = Py_BuildValue("s","OPK_TASK_START");}
-    else if (task == OPK_TASK_NEW_X)
-    	{task_py = Py_BuildValue("s","OPK_TASK_NEW_X");}
-    else if (task == OPK_TASK_FINAL_X)
-    	{task_py = Py_BuildValue("s","OPK_TASK_FINAL_X");}
-    else if (task == OPK_TASK_WARNING)
-    	{task_py = Py_BuildValue("s","OPK_TASK_WARNING");}
-    else if (task == OPK_TASK_ERROR)
-    	{task_py = Py_BuildValue("s","OPK_TASK_ERROR");}
+    if (task == OPK_TASK_COMPUTE_FG) {
+        task_py = Py_BuildValue("s", "OPK_TASK_COMPUTE_FG");
+    } else if (task == OPK_TASK_START) {
+        task_py = Py_BuildValue("s", "OPK_TASK_START");
+    } else if (task == OPK_TASK_NEW_X) {
+        task_py = Py_BuildValue("s", "OPK_TASK_NEW_X");
+    } else if (task == OPK_TASK_FINAL_X) {
+        task_py = Py_BuildValue("s", "OPK_TASK_FINAL_X");
+    } else if (task == OPK_TASK_WARNING) {
+        task_py = Py_BuildValue("s", "OPK_TASK_WARNING");
+    } else if (task == OPK_TASK_ERROR) {
+        task_py = Py_BuildValue("s", "OPK_TASK_ERROR");
+    }
 
-    else {task_py = Py_BuildValue("s","INITIALIZATION_ERROR");}
+    else {
+        task_py = Py_BuildValue("s", "INITIALIZATION_ERROR");
+    }
     return task_py;
 }
+
 // ------------------------------------------------------------------------------------------ 
 
 
@@ -468,89 +465,91 @@ else
 /* ------------------------------------------------------------------------------------------
 ----------------------------------- FONCTION ITERATE ----------------------------------------
 --------------------------------------------------------------------------------------------- */
-static PyObject *Iterate (PyObject * self, PyObject * args)
+static PyObject *
+Iterate(PyObject * self, PyObject * args)
 {
 // arguments d'entree
-    PyObject *x_obj=NULL, *x_arr=NULL;
+    PyObject *x_obj = NULL, *x_arr = NULL;
     double f_c;
     PyObject *g_obj, *g_arr;
 // arguments de sortie
     opk_task_t task_locale = OPK_TASK_ERROR;
-    char * task_c;
+    char *task_c;
 // Autres arguments
     void *x, *g;
 
 // Conversion selon le type
-    if (type == OPK_DOUBLE)
-    {
-        if (!PyArg_ParseTuple (args, "OdO",&x_obj, &f_c, &g_obj))
-           {return NULL;}
-    }
-    else
-    {
-	f_c = (float)(f_c);
-        if (!PyArg_ParseTuple (args, "OfO",&x_obj, &f_c, &g_obj))
-           {return NULL;}
+    if (type == OPK_DOUBLE) {
+        if (!PyArg_ParseTuple(args, "OdOi", &x_obj, &f_c, &g_obj, &limited_c)) {
+            return NULL;
+        }
+    } else {
+        f_c = (float) (f_c);
+        if (!PyArg_ParseTuple(args, "OfOi", &x_obj, &f_c, &g_obj, &limited_c)) {
+            return NULL;
+        }
     }
 
 // On fait passer les valeurs dans x et g, selon le type
-    if (x_obj == NULL) 
-        {return NULL;}
-    if (type == OPK_DOUBLE)
-    {
-        x_arr  = PyArray_FROM_OTF(x_obj,  NPY_DOUBLE, NPY_IN_ARRAY);
-   	g_arr  = PyArray_FROM_OTF(g_obj,  NPY_DOUBLE, NPY_IN_ARRAY);
-	x  = (double*)PyArray_DATA(x_arr);
-        g  = (double*)PyArray_DATA(g_arr);
+    if (x_obj == NULL) {
+        return NULL;
     }
-    else
-    {
-        x_arr  = PyArray_FROM_OTF(x_obj,  NPY_FLOAT, NPY_IN_ARRAY);
-   	g_arr  = PyArray_FROM_OTF(g_obj,  NPY_FLOAT, NPY_IN_ARRAY);
-        x  = (float*)PyArray_DATA(x_arr);
-        g  = (float*)PyArray_DATA(g_arr);
+    if (type == OPK_DOUBLE) {
+        x_arr = PyArray_FROM_OTF(x_obj, NPY_DOUBLE, NPY_IN_ARRAY);
+        g_arr = PyArray_FROM_OTF(g_obj, NPY_DOUBLE, NPY_IN_ARRAY);
+        x = (double *) PyArray_DATA(x_arr);
+        g = (double *) PyArray_DATA(g_arr);
+    } else {
+        x_arr = PyArray_FROM_OTF(x_obj, NPY_FLOAT, NPY_IN_ARRAY);
+        g_arr = PyArray_FROM_OTF(g_obj, NPY_FLOAT, NPY_IN_ARRAY);
+        x = (float *) PyArray_DATA(x_arr);
+        g = (float *) PyArray_DATA(g_arr);
     }
-    if (x_arr == NULL || g_arr == NULL)
-       {return NULL;}
-    if (x == NULL || g == NULL)
-       {return NULL;}
-
+    if (x_arr == NULL || g_arr == NULL) {
+        return NULL;
+    }
+    if (x == NULL || g == NULL) {
+        return NULL;
+    }
 // On transforme x et g en vecteur de l'espace qu'on cree. 
-    vx = opk_wrap_simple_double_vector (vspace, x, NULL, x);
-    vg = opk_wrap_simple_double_vector (vspace, g, NULL, g);
+    vx = opk_wrap_simple_double_vector(vspace, x, NULL, x);
+    vg = opk_wrap_simple_double_vector(vspace, g, NULL, g);
 
 
 // On appelle la fonction iterate
-    if (limited == 0)
-    {
-   	if (strcasecmp (algorithm_name, "nlcg") == 0) 
-            {task_locale = opk_iterate_nlcg(nlcg, vx, f_c, vg);}
-    	else if (strcasecmp (algorithm_name, "vmlmb") == 0)
-            {task_locale = opk_iterate_vmlmb(vmlmb, vx, f_c, vg);}
+    if (limited == 0) {
+        if (strcasecmp(algorithm_name, "nlcg") == 0) {
+            task_locale = opk_iterate_nlcg(nlcg, vx, f_c, vg);
+        } else if (strcasecmp(algorithm_name, "vmlmb") == 0) {
+            task_locale = opk_iterate_vmlmb(vmlmb, vx, f_c, vg);
+        }
+    } else {
+        task_locale =
+            opk_iterate(limited_optimizer, type, problem_size, x, f_c, g);
     }
-    else
-    {task_locale = opk_iterate(limited_optimizer, type, problem_size, x, f_c, g);}
 
 
 // On prend la valeur de "task"
-    if (task_locale == OPK_TASK_START)
-    	{task_c = "OPK_TASK_START";}   
-    else if (task_locale == OPK_TASK_COMPUTE_FG)
-   	{task_c = "OPK_TASK_COMPUTE_FG";}
-    else if (task_locale == OPK_TASK_NEW_X)
-    	{task_c = "OPK_TASK_NEW_X";}
-    else if (task_locale == OPK_TASK_FINAL_X)
-    	{task_c = "OPK_TASK_FINAL_X";}
-    else if (task_locale == OPK_TASK_WARNING)
-    	{task_c = "OPK_TASK_WARNING";}
-    else if (task_locale == OPK_TASK_ERROR)
-    	{task_c = "OPK_TASK_ERROR";}
-    else
-    	{task_c = "OPK_TASK_UNKNOWN";}
+    if (task_locale == OPK_TASK_START) {
+        task_c = "OPK_TASK_START";
+    } else if (task_locale == OPK_TASK_COMPUTE_FG) {
+        task_c = "OPK_TASK_COMPUTE_FG";
+    } else if (task_locale == OPK_TASK_NEW_X) {
+        task_c = "OPK_TASK_NEW_X";
+    } else if (task_locale == OPK_TASK_FINAL_X) {
+        task_c = "OPK_TASK_FINAL_X";
+    } else if (task_locale == OPK_TASK_WARNING) {
+        task_c = "OPK_TASK_WARNING";
+    } else if (task_locale == OPK_TASK_ERROR) {
+        task_c = "OPK_TASK_ERROR";
+    } else {
+        task_c = "OPK_TASK_UNKNOWN";
+    }
 
 // On renvoit la valeur de "task"
-    return Py_BuildValue("s",task_c);
+    return Py_BuildValue("s", task_c);
 }
+
 // ------------------------------------------------------------------------------------------ 
 
 
@@ -558,6 +557,7 @@ static PyObject *Iterate (PyObject * self, PyObject * args)
 /* ------------------------------------------------------------------------------------------
 ------------------------------------- FONCTION TASKINFO -------------------------------------
 --------------------------------------------------------------------------------------------- */
+
 
 static PyObject *TaskInfo (PyObject * self, PyObject * args)
 {
@@ -732,6 +732,7 @@ static PyObject *TaskInfo (PyObject * self, PyObject * args)
     	    {return_c = "OPK_GET_STEP_FAILURE";} 
     }
 */
+
 /* // ------------ GET_OPTIONS
     else if (strcmp(QuelleFonction, "Get_options") == 0)
     {
@@ -849,24 +850,26 @@ static PyObject *TaskInfo (PyObject * self, PyObject * args)
 /* ------------------------------------------------------------------------------------------
 ------------------------------------ FONCTION CLOSE -----------------------------------------
 --------------------------------------------------------------------------------------------- */
-static PyObject *Close (PyObject * self)
+static PyObject *
+Close(PyObject * self)
 {
 
 // Free workspace 
-    OPK_DROP (vx);
-    OPK_DROP (vg);
-    OPK_DROP (vgp);
-    OPK_DROP (vspace);
+    OPK_DROP(vx);
+    OPK_DROP(vg);
+    OPK_DROP(vgp);
+    OPK_DROP(vspace);
 
 // On ferme l'algorithme utilise
-    if (strcasecmp (algorithm_name, "nlcg") == 0) 
-    	OPK_DROP (nlcg);
-    else 
-        OPK_DROP (vmlmb);
+    if (strcasecmp(algorithm_name, "nlcg") == 0)
+        OPK_DROP(nlcg);
+    else
+        OPK_DROP(vmlmb);
 
 // Function does not return anything
-  Py_RETURN_NONE;
+    Py_RETURN_NONE;
 }
+
 // ------------------------------------------------------------------------------------------ 
 
 
@@ -880,28 +883,28 @@ static PyMethodDef Methods[] =
     {"TaskInfo", (PyCFunction)TaskInfo, METH_VARARGS, "lala"},
     {"Close", (PyCFunction)Close, METH_NOARGS, "lala"},
     {NULL, NULL, 0, NULL}
-    };
+};
 
 //module initialization */
-	// PYTHON2
+static struct PyModuleDef optimpack_module =
+    { PyModuleDef_HEAD_INIT, "opkc_v3", NULL, -1, Methods };
+
+#if PY_MAJOR_VERSION >= 3
+    // Python 3+
 PyMODINIT_FUNC
-initopkc_v3 (void)
+PyInit_opkc_v3(void)
+{
+    import_array();
+    return PyModule_Create(&optimpack_module);
+}
+#else
+    // PYTHON2
+PyMODINIT_FUNC
+initopkc_v3(void)
 {
     (void) Py_InitModule("opkc_v3", Methods);
     import_array();
 }
+#endif
 
-/*
-	// PYTHON3
-static struct PyModuleDef optimpack_module = {
-    PyModuleDef_HEAD_INIT, "optimpack_module", NULL, -1, Methods
-};
-
-PyMODINIT_FUNC
-PyInit_optimpack_wrapper(void)
-{
-    return PyModule_Create(&optimpack_module);
-    import_array();
-}
-*/
 // ------------------------------------------------------------------------------------------ 
