@@ -34,7 +34,6 @@ import opkc_v3
 
 #############################################################################
 ##  A FAIRE
-# tester que ce qui est dans x est bien un float.
 
 ## avec verbose, ajouter les get_status
 
@@ -57,7 +56,7 @@ import opkc_v3
 """      ---------- DOCUMENT: Initialisation ----------
 The function Initialisation performs the creation of vspace and the optimizer 
 as requested by the user. It returns the value of the next task (supposedly
- OPK_TASK_COMPUTE_FG).
+OPK_TASK_COMPUTE_FG).
  
 The input arguments are more or less the same than for opk_minimize. 
 These cannot be optional arguments for some may be modified by the user.
@@ -67,8 +66,7 @@ These cannot be optional arguments for some may be modified by the user.
 # extern Iterate
 """      ---------- DOCUMENT: Iterate ----------
 The function Iterate performs an iteration of x given the algorithm,
-linesearch, etc given in parameter of opk_minimize. It returns the value of
-the next task.
+linesearch, etc. It returns the value of the next task.
 
 The input arguments are :  
 x --> the current point of the function.
@@ -87,9 +85,11 @@ The input argument is the name of the action that needs to be
 performed. It is a char string. Possible values are :
     "Get_task" --> 
     "Get_status" -->  
-    "Get_iteration" --> 
-    "Get_evaluation" --> 
-    "Get_restarts" -->          
+    "Get_iterations" --> Returns the number of iterations, supposeldy egal to
+                         iteration.
+    "Get_evaluations" --> Returns the number of evaluations, supposeldy egal 
+                          to evaluation.
+    "Get_restarts" --> Return the number of times the algorithm has restarted.   
     "Get_step" -->   
     
 """
@@ -141,7 +141,7 @@ def opk_minimize(x_in, fg, g, bl=NULL, bu=NULL, algorithm="nlcg", linesearch="qu
     linesearch --> The name of the linesearch chosen to minimize the function.
                    It is a char string. Possible values are :
              "quadratic" --> 
-             "Armijo" --> 
+             "armijo" --> 
              "cubic" --> 
              "nonmonotone" -->
                   Default value is "quadratic".
@@ -298,7 +298,7 @@ def opk_minimize(x_in, fg, g, bl=NULL, bu=NULL, algorithm="nlcg", linesearch="qu
            # print "task = ", task  
            # print "f(x) = ", fx
             print "x = ", x                
-        task = opkc_v3.Iterate(x, fx, g, limited)              
+        task = opkc_v3.Iterate(x, fx, g)              
                 
     # Algorithm has converged, solution is available                
     if task == "OPK_TASK_FINAL_X":
@@ -322,6 +322,13 @@ def opk_minimize(x_in, fg, g, bl=NULL, bu=NULL, algorithm="nlcg", linesearch="qu
     else:
         print("ERROR : Unknown problem has occured")
         # Destruction of the optimizer  
+    
+    info = opkc_v3.TaskInfo("Get_iterations")    
+    print info, iteration
+    info = opkc_v3.TaskInfo("Get_evaluations")    
+    print info, evaluation
+    info = opkc_v3.TaskInfo("Get_restarts")    
+    print info
     x_out = x.copy()    
     opkc_v3.Close()   
 

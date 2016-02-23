@@ -144,34 +144,36 @@ g = np.array([12, 4], dtype="float64")
 f = fg_Rosen(x, g)
 
 
-x_out = opkpy_v3.opk_minimize(x, fg_Rosen, g, algorithm="nlcg", linesearch="quadratic",
-                      nlcg="FletcherReeves", limited=1, verbose=0)      
-print"nlcg, quadratic, FletcherReeves :" + str(x_out) + "\n \n"
-x_out = opkpy_v3.opk_minimize(x, fg_Rosen, g, algorithm="nlcg", linesearch="quadratic",
-                      nlcg="HestenesStiefel", limited=1, verbose=0)      
-print"nlcg, quadratic, HestenesStiefel :" + str(x_out) + "\n \n"
-x_out = opkpy_v3.opk_minimize(x, fg_Rosen, g, algorithm="nlcg", linesearch="quadratic",
-                      nlcg="PolakRibierePolyak", limited=1)      
-print"nlcg, quadratic, PolakRibierePolyak :" + str(x_out) + "\n \n"
-x_out = opkpy_v3.opk_minimize(x, fg_Rosen, g, algorithm="nlcg", linesearch="quadratic",
-                      nlcg="Fletcher", limited=1)      
-print"nlcg, quadratic, Fletcher :" + str(x_out) + "\n \n"
-x_out = opkpy_v3.opk_minimize(x, fg_Rosen, g, algorithm="nlcg", linesearch="quadratic",
-                      nlcg="LiuStorey", limited=1)      
-print"nlcg, quadratic, LiuStorey :" + str(x_out) + "\n \n"
-x_out = opkpy_v3.opk_minimize(x, fg_Rosen, g, algorithm="nlcg", linesearch="quadratic",
-                      nlcg="DaiYuan", limited=1)      
-print"nlcg, quadratic, DaiYuan :" + str(x_out) + "\n \n"
-x_out = opkpy_v3.opk_minimize(x, fg_Rosen, g, algorithm="nlcg", linesearch="quadratic",
-                      nlcg="PerryShanno", limited=1)      
-print"nlcg, quadratic, PerryShanno :" + str(x_out) + "\n \n"
-x_out = opkpy_v3.opk_minimize(x, fg_Rosen, g, algorithm="nlcg", linesearch="quadratic",
+#x_out = opkpy_v3.opk_minimize(x, fg_Rosen, g, algorithm="nlcg", linesearch="armijo",
+#                      nlcg="FletcherReeves", limited=1, verbose=0)      
+#print"nlcg, quadratic, FletcherReeves :" + str(x_out) + "\n \n"
+#x_out = opkpy_v3.opk_minimize(x, fg_Rosen, g, algorithm="nlcg", linesearch="armijo",
+#                      nlcg="HestenesStiefel", limited=1, verbose=0)      
+#print"nlcg, quadratic, HestenesStiefel :" + str(x_out) + "\n \n"
+#x_out = opkpy_v3.opk_minimize(x, fg_Rosen, g, algorithm="nlcg", linesearch="armijo",
+#                      nlcg="PolakRibierePolyak", limited=1)      
+#print"nlcg, quadratic, PolakRibierePolyak :" + str(x_out) + "\n \n"
+#x_out = opkpy_v3.opk_minimize(x, fg_Rosen, g, algorithm="nlcg", linesearch="armijo",
+#                      nlcg="Fletcher", limited=1)      
+#print"nlcg, quadratic, Fletcher :" + str(x_out) + "\n \n"
+#x_out = opkpy_v3.opk_minimize(x, fg_Rosen, g, algorithm="nlcg", linesearch="armijo",
+#                      nlcg="LiuStorey", limited=1)      
+#print"nlcg, quadratic, LiuStorey :" + str(x_out) + "\n \n"
+#x_out = opkpy_v3.opk_minimize(x, fg_Rosen, g, algorithm="nlcg", linesearch="armijo",
+#                      nlcg="DaiYuan", limited=1)      
+#print"nlcg, quadratic, DaiYuan :" + str(x_out) + "\n \n"
+#x_out = opkpy_v3.opk_minimize(x, fg_Rosen, g, algorithm="nlcg", linesearch="armijo",
+#                      nlcg="PerryShanno", limited=1)      
+#print"nlcg, quadratic, PerryShanno :" + str(x_out) + "\n \n"
+x_out = opkpy_v3.opk_minimize(x, fg_Rosen, g, algorithm="nlcg", linesearch="armijo",
                       nlcg="HagerZhang", limited=1)      
 print"nlcg, quadratic, HagerZhang :" + str(x_out) + "\n \n"
 
-###################################################################################
+##############################################################################
 
-################################# PARAMETRES ###################################### 
+
+################################# PARAMETRES #################################
+ 
 # x, f, g
 # bl, bu  ---> only for vmlmb
 ###### algorithm
@@ -186,11 +188,118 @@ print"nlcg, quadratic, HagerZhang :" + str(x_out) + "\n \n"
 # verbose
 ###### limited
 
-# possibilites: 4x8x2 + 4x3x2
-
-###################################################################################
+##############################################################################
 
 
+################################# RESULTATS ##################################
+""" 
+--> NLCG 
+     --> quadratic
+               --> FletcherReeves 
+                              --> nonlimited OK
+                              --> limited    OK
+               --> HestenesStiefel
+                              --> nonlimited CONVERGE 
+                              --> limited    CONVERGE     
+               --> PolakRibierePolyak
+                              --> nonlimited CONVERGE 
+                              --> limited    CONVERGE         
+               --> Fletcher
+                              --> nonlimited OK
+                              --> limited    OK       
+               --> LiuStorey
+                              --> nonlimited CONVERGE 
+                              --> limited    CONVERGE             
+               --> DaiYuan 
+                              --> nonlimited CONVERGE 
+                              --> limited    CONVERGE              
+               --> PerryShanno
+                              --> nonlimited CONVERGE 
+                              --> limited    CONVERGE              
+               --> HagerZhang 
+                              --> nonlimited CONVERGE 
+                              --> limited    CONVERGE  
+     --> Armijo
+               --> FletcherReeves 
+                              --> nonlimited OK
+                              --> limited    OK
+               --> HestenesStiefel
+                              --> nonlimited OK
+                              --> limited    OK        
+               --> PolakRibierePolyak
+                              --> nonlimited CONVERGE
+                              --> limited    OK         
+               --> Fletcher
+                              --> nonlimited OK
+                              --> limited    OK     
+               --> LiuStorey
+                              --> nonlimited OK
+                              --> limited    OK       
+               --> DaiYuan 
+                              --> nonlimited CONVERGE
+                              --> limited    CONVERGE        
+               --> PerryShanno
+                              --> nonlimited CONVERGE
+                              --> limited    CONVERGE             
+               --> HagerZhang 
+                              --> nonlimited CONVERGE
+                              --> limited    CONVERGE
+     --> cubic
+               --> FletcherReeves 
+                              --> nonlimited
+                              --> limited
+               --> HestenesStiefel
+                              --> nonlimited
+                              --> limited             
+               --> PolakRibierePolyak
+                              --> nonlimited
+                              --> limited             
+               --> Fletcher
+                              --> nonlimited
+                              --> limited             
+               --> LiuStorey
+                              --> nonlimited
+                              --> limited             
+               --> DaiYuan 
+                              --> nonlimited
+                              --> limited             
+               --> PerryShanno
+                              --> nonlimited
+                              --> limited             
+               --> HagerZhang 
+                              --> nonlimited
+                              --> limited 
+     --> nonmonotone
+               --> FletcherReeves 
+                              --> nonlimited
+                              --> limited
+               --> HestenesStiefel
+                              --> nonlimited
+                              --> limited             
+               --> PolakRibierePolyak
+                              --> nonlimited
+                              --> limited             
+               --> Fletcher
+                              --> nonlimited
+                              --> limited             
+               --> LiuStorey
+                              --> nonlimited
+                              --> limited             
+               --> DaiYuan 
+                              --> nonlimited
+                              --> limited             
+               --> PerryShanno
+                              --> nonlimited
+                              --> limited             
+               --> HagerZhang 
+                              --> nonlimited
+                              --> limited                 
+"""
+ 
+ 
+ 
+
+##############################################################################
 
 
 
