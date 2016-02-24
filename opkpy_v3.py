@@ -35,6 +35,8 @@ import opkc_v3
 #############################################################################
 ##  A FAIRE
 
+## voir comment tester un reel
+
 ## avec verbose, ajouter les get_status
 
 ## Changer les valeurs de sortie pour get_s et get_y
@@ -189,7 +191,7 @@ def opk_minimize(x_in, fg, g, bl=NULL, bu=NULL, algorithm="nlcg", linesearch="qu
     bound_given = 0
     single = 0
 
-    # Tests to check the type of the entries
+    # Input arguments tests
     # size of x
     if (isinstance(x, np.ndarray) == False) or (len(x.shape) != 1):
         print("ERROR : x must be of type numpy.ndarray and of dimension 1")
@@ -211,19 +213,12 @@ def opk_minimize(x_in, fg, g, bl=NULL, bu=NULL, algorithm="nlcg", linesearch="qu
     if (isinstance(g, np.ndarray) == False) or (len(g.shape) != 1):
         print("ERROR :g must be of type numpy.ndarray  and of dimension 1")
         task = "INPUT_ERROR"
-
-    # Input arguments
-    # Delta
-    if delta != DELTA_DEFAULT:
-        delta_given = 1
-    else:
-        delta_given = 0
-    # epsilon
-    if epsilon != EPSILON_DEFAULT:
-        epsilon_given = 1
-    else:
-        epsilon_given = 0
     # bl, bu, mem
+    if (isinstance(bl, float) == False) and (isinstance(bl, int) == False):
+        print("ERROR :bl must be a real number")
+    if (isinstance(bu, float) == False) and (isinstance(bu, int) == False):
+        print("ERROR :bu must be a real number")
+        task = "INPUT_ERROR"        
     if (algorithm == "nlcg") and ((bl != NULL) or (bu != NULL)):
         print("WARNING: User specified a bound for algorithm nlcg : irrelevant")
     elif (algorithm == "nlcg") and (mem != 5):
@@ -235,7 +230,17 @@ def opk_minimize(x_in, fg, g, bl=NULL, bu=NULL, algorithm="nlcg", linesearch="qu
     elif (algorithm == "vmlmb") and (bl != NULL) and (bu != NULL):
         bound_given = 3
     else:
-        bound_given = 0
+        bound_given = 0        
+    # Delta
+    if delta != DELTA_DEFAULT:
+        delta_given = 1
+    else:
+        delta_given = 0
+    # epsilon
+    if epsilon != EPSILON_DEFAULT:
+        epsilon_given = 1
+    else:
+        epsilon_given = 0
     # verbose
     if verbose != NULL:
         print("ALGO: ", algorithm, "LINE: ", linesearch, "AUTO: ", autostep)
@@ -278,8 +283,8 @@ def opk_minimize(x_in, fg, g, bl=NULL, bu=NULL, algorithm="nlcg", linesearch="qu
         if verbose != NULL:
             print"-----------  iteration n",iteration, ", evaluation n", evaluation, "  -----------"
             print "task = ", task  
-            print "f(x) = ", fx
-            print "x = ", x                
+        print "f(x) = ", fx
+            #print "x = ", x                
         task = opkc_v3.opk_iteration(x, fx, g)              
                               
     if task == "OPK_TASK_FINAL_X":
@@ -304,18 +309,18 @@ def opk_minimize(x_in, fg, g, bl=NULL, bu=NULL, algorithm="nlcg", linesearch="qu
         # Unknown problem has occured
         print("ERROR : Unknown problem has occured")
     # Destruction of the optimizer  
-    info = opkc_v3.opk_taskInfo("Get_task")    
-    print info, "task"     
-    info = opkc_v3.opk_taskInfo("Get_status")    
-    print info, "status"   
-    info = opkc_v3.opk_taskInfo("Get_iterations")    
-    print info, iteration
-    info = opkc_v3.opk_taskInfo("Get_evaluations")    
-    print info, evaluation
-    info = opkc_v3.opk_taskInfo("Get_restarts")    
-    print info
-    info = opkc_v3.opk_taskInfo("Get_reason")    
-    print info
+#    info = opkc_v3.opk_taskInfo("Get_task")    
+#    print info, "task"     
+#    info = opkc_v3.opk_taskInfo("Get_status")    
+#    print info, "status"   
+#    info = opkc_v3.opk_taskInfo("Get_iterations")    
+#    print info, iteration
+#    info = opkc_v3.opk_taskInfo("Get_evaluations")    
+#    print info, evaluation
+#    info = opkc_v3.opk_taskInfo("Get_restarts")    
+#    print info
+#    info = opkc_v3.opk_taskInfo("Get_reason")    
+#    print info
     x_out = x.copy()    
     opkc_v3.opk_close()   
 

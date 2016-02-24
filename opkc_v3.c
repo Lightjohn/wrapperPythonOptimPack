@@ -335,7 +335,7 @@ opk_initialisation(PyObject * self, PyObject * args, PyObject * keywds)
                 printf("# Bad VMLMB options\n");
                 return NULL;
             }
-            //_task = opk_start_vmlmb (_vmlmb, _vx);
+            _task = opk_start_vmlmb (_vmlmb, _vx);
 
         }
         // NLCG ---------------------------------  
