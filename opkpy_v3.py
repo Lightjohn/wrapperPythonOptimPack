@@ -1,34 +1,35 @@
-# * opkpy.py --
-# *
-# * OPKPY is OptimPack for PYTHON.
-# *
-# *-----------------------------------------------------------------------------
-# *
-# * This file is part of OptimPack (https://github.com/emmt/OptimPack).
-# *
-# * Copyright (C) 2014, 2015 Eric Thiebaut
-# *
-# * Permission is hereby granted, free of charge, to any person obtaining a copy
-# * of this software and associated documentation files (the "Software"), to
-# * deal in the Software without restriction, including without limitation the
-# * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-# * sell copies of the Software, and to permit persons to whom the Software is
-# * furnished to do so, subject to the following conditions:
-# *
-# * The above copyright notice and this permission notice shall be included in
-# * all copies or substantial portions of the Software.
-# *
-# * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-# * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
-# * IN THE SOFTWARE.
-# *
-# *-----------------------------------------------------------------------------
+# opkpy.py --
+#
+# OPKPY is OptimPack for PYTHON.
+#
+#-----------------------------------------------------------------------------
+#
+# This file is part of OptimPack (https://github.com/emmt/OptimPack).
+# 
+# Copyright (C) 2014, 2015 Eric Thiebaut
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to
+# deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+# sell copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+# IN THE SOFTWARE.
+#
+#------------------------------------------------------------------------------
 
 import numpy as np
+
 import opkc_v3
 
 #############################################################################
@@ -48,37 +49,30 @@ import opkc_v3
 #############################################################################
 
 
-#############################################################################
-## DECLARATION ET DOCUMENTATION
-
-# extern Initialisation
-"""      ---------- DOCUMENT: Initialisation ----------
-The function Initialisation performs the creation of vspace and the optimizer 
-as requested by the user. It returns the value of the next task (supposedly
-OPK_TASK_COMPUTE_FG).
+# Documentation of function opk_initialisation.
+"""Performs the creation of vspace and the optimizer as requested by the user.
  
-The input arguments are more or less the same than for opk_minimize. 
+The input arguments are more or less the same than for opk_minimize :
+x, algorithm, linesearch, autostep, nlcg, vmlmb, delta, epsilon, delta_given,
+epsilon_given, gatol, grtol, bl, bu, bound_given, mem, powell, single, limited
 These cannot be optional arguments for some may be modified by the user.
-    
+
+It returns the value of the next task (supposedlyOPK_TASK_COMPUTE_FG).
 """
 
-# extern Iterate
-"""      ---------- DOCUMENT: Iterate ----------
-The function Iterate performs an iteration of x given the algorithm,
-linesearch, etc. It returns the value of the next task.
+# Documentation of function opk_iteration.
+"""Performs an iteration of x given the algorithm,linesearch, etc.
 
 The input arguments are :  
 x --> the current point of the function.
 fx --> the value of the function to minimize at current point.
 g --> the function gradient at current point.
-    
+
+It returns the value of the next task. 
 """
 
-# extern TaskInfo
-"""      ---------- DOCUMENT: Taskinfo ----------
-The function TaskInfo returns the information asked by the user in 
-parameter, regarding the current optimizer.
-The returned value is always a char string, even if it represents a double.
+# Documentation of function opk_taskinfo.
+"""Performs the task given in parameter, regarding the current optimizer.
 
 The input argument is the name of the action that needs to be 
 performed. It is a char string. Possible values are :
@@ -93,17 +87,18 @@ performed. It is a char string. Possible values are :
     "Get_reason" --> Retrieves a textual description for a given status, the 
                      described status is obtained via Get_status. Relevant 
                      only for limited minimization.
+                     
+The returned value is always a char string, even if it represents a double.
 """
 
-# extern Close
-"""      ---------- DOCUMENT: Close ----------
-The function Close drops the object defined as global variables. A copy of x
-needs to be done prior to the call of Close for x is lost afterwards.
-No input, no output.
-    
+# Documentation of function opk_close.
+"""Drops the object defined as global variables.
+
+A copy of xneeds to be done prior to the call of Close for x is lost
+afterwards. Function has no input and no output.
 """
 #############################################################################
-# Input values
+# Constant variables
 DELTA_DEFAULT = 5e-2
 EPSILON_DEFAULT = 1e-2
 NULL = 0
@@ -112,12 +107,10 @@ NULL = 0
 def opk_minimize(x_in, fg, g, bl=NULL, bu=NULL, algorithm="nlcg", linesearch="quadratic", autostep="ShannoPhua",
                  nlcg="FletcherReeves", vmlmb="lbfgs", delta=DELTA_DEFAULT, epsilon=EPSILON_DEFAULT, gatol=1.0e-6,
                  grtol=0.0, maxiter=500, maxeval=500, mem=5, powell=False, verbose=0, limited=NULL):
-    """      ---------- DOCUMENT: opk_minimize ----------
-        
-    The function opk_minimize minimizes a function passed by the user following 
-    a given algorithm, linesearch, etc. It keeps x_in untuched and returns 
-    the value of the final point x_out so that f(x_out) = 0
+    """Minimizes a function given a starting point and it's gradient.
     
+    It keeps x_in untuched and returns the value of the final point x_out 
+    so that f(x_out) = 0.    
     The input arguments are :
     x_in --> the starting point of the function. x contains all the variables 
           of the fonction to minimize in a numpy array of dimension 1, and type 
@@ -128,10 +121,8 @@ def opk_minimize(x_in, fg, g, bl=NULL, bu=NULL, algorithm="nlcg", linesearch="qu
           fx = Rosenbrock(x) and gx is computed into grad(Rosenbrock(x))
     g --> the gradient of the function to minimize at x. g is of same size and 
           type as x. The input value does not matter as it will be calculated
-          with fg. Exemple : g = np.array([-22.4 , -16.24], dtype="double")
-          
-    ------- Other arguments are optional 
-    
+          with fg. Exemple : g = np.array([-22.4 , -16.24], dtype="double")    
+    ------- Other arguments are optional  
     bl --> lower bound for "vmlmb" algorithm. Default value is 0.
     bu --> upper bound for "vmlmb" algorithm. Default value is 1e6.
     algorithm --> The name of the algorithm chosen to minimize the function.
@@ -186,8 +177,7 @@ def opk_minimize(x_in, fg, g, bl=NULL, bu=NULL, algorithm="nlcg", linesearch="qu
                 Default value is 0.
     limited --> To be set to 1 if the required algorithm is of limited
                 memory. Default value is 0.
-    
-             --------------------------------------------"""
+    """
 
     # Initialisation of the algorithm
     print "\n"
@@ -199,7 +189,7 @@ def opk_minimize(x_in, fg, g, bl=NULL, bu=NULL, algorithm="nlcg", linesearch="qu
     bound_given = 0
     single = 0
 
-# Tests to check the type of the entries
+    # Tests to check the type of the entries
     # size of x
     if (isinstance(x, np.ndarray) == False) or (len(x.shape) != 1):
         print("ERROR : x must be of type numpy.ndarray and of dimension 1")
@@ -222,7 +212,7 @@ def opk_minimize(x_in, fg, g, bl=NULL, bu=NULL, algorithm="nlcg", linesearch="qu
         print("ERROR :g must be of type numpy.ndarray  and of dimension 1")
         task = "INPUT_ERROR"
 
-# Input arguments
+    # Input arguments
     # Delta
     if delta != DELTA_DEFAULT:
         delta_given = 1
@@ -233,7 +223,7 @@ def opk_minimize(x_in, fg, g, bl=NULL, bu=NULL, algorithm="nlcg", linesearch="qu
         epsilon_given = 1
     else:
         epsilon_given = 0
-        # bl, bu, mem
+    # bl, bu, mem
     if (algorithm == "nlcg") and ((bl != NULL) or (bu != NULL)):
         print("WARNING: User specified a bound for algorithm nlcg : irrelevant")
     elif (algorithm == "nlcg") and (mem != 5):
@@ -253,89 +243,80 @@ def opk_minimize(x_in, fg, g, bl=NULL, bu=NULL, algorithm="nlcg", linesearch="qu
     if gatol < 0:
         print("ERROR: bad input for gatol")
         task = "INPUT_ERROR"
-        # grtol
+    # grtol
     elif grtol < 0:
         print("ERROR: bad input for grtol")
         task = "INPUT_ERROR"
-        # nlcg
+    # nlcg
     if (algorithm != "nlcg") and (nlcg != "FletcherReeves"):
         print("WARNING: User specified a search direction for algorithm nlcg \
               but is running algorithm vmlmb")
     if (algorithm != "vmlmb") and (vmlmb != "lbfgs"):
         print("WARNING: User specified a search direction for algorithm vmlmb \
               but is running algorithm nlcg")
-              
-    ## tests
-    #    task = opkc_v3.Initialisation(x,algorithm,linesearch,autostep,nlcg,vmlmb,
-    #       delta,epsilon,delta_given, epsilon_given, gatol,grtol,bl,bu,bound_given,mem,powell,single,limited)
-    #    print "task = ",task
-    #    task = opkc_v3.Iterate(x,fx,g,limited)
-    #    print "task = ",task
  
- 
-# Initialization             
-    task = opkc_v3.Initialisation(x, algorithm, linesearch, autostep, nlcg, 
+    # Initialization             
+    task = opkc_v3.opk_initialisation(x, algorithm, linesearch, autostep, nlcg, 
                                   vmlmb, delta, epsilon, delta_given,
                                   epsilon_given, gatol, grtol, bl, bu, 
                                   bound_given, mem, powell, single, limited)          
 
-# Beginning of the algorithm
+    # Beginning of the algorithm
     while True:
-            # Caller must compute f(x) and g(x).
         if (task == "OPK_TASK_COMPUTE_FG") and (iteration < maxiter) and \
-           (evaluation < maxeval) :
+            (evaluation < maxeval) :
+            # Caller must compute f(x) and g(x).
             evaluation += 1          
             fx = fg(x, g)  
-            # A new iterate is available
         elif (task == "OPK_TASK_NEW_X") and (iteration < maxiter) and \
-             (evaluation < maxeval) :
+              (evaluation < maxeval) :
+            # A new iterate is available                
             iteration += 1  
-            # end of the process
         else :
             break
-            # Iterate         
+        # Comment and iterate
         if verbose != NULL:
             print"-----------  iteration n",iteration, ", evaluation n", evaluation, "  -----------"
-           # print "task = ", task  
-           # print "f(x) = ", fx
+            print "task = ", task  
+            print "f(x) = ", fx
             print "x = ", x                
-        task = opkc_v3.Iterate(x, fx, g)              
-                
-    # Algorithm has converged, solution is available                
+        task = opkc_v3.opk_iteration(x, fx, g)              
+                              
     if task == "OPK_TASK_FINAL_X":
+        # Algorithm has converged, solution is available  
         print"Algorithm has converged in",iteration,"iterations and",evaluation,"evaluation. Solution is available"
-    # Algorithm terminated with a warning
     elif task == "OPK_TASK_WARNING":
+        # Algorithm terminated with a warning
         print("ERROR : Algorithm terminated with a warning")
-        # An error has ocurred
     elif task == "OPK_TASK_ERROR":
+        # An error has ocurred
         print("ERROR : OPK_TASK_ERROR has occured")
-        # Error in the variable input
     elif task == "INPUT_ERROR":
+        # Error in the variable input
         print("ERROR : Input error, check all the input of function optimize")
-        # Too much iterations, check OPK_TASK_NEW_X
     elif iteration >= maxiter:
+        # Too much iterations, check OPK_TASK_NEW_X
         print("WARNING : Too much iteration\n")
-        # Too much evaluation of f and g, check OPK_TASK_COMPUTE_FG
     elif evaluation >= maxeval:
+        # Too much evaluation of f and g, check OPK_TASK_COMPUTE_FG
         print("WARNING : Too much evaluation\n")
-        # Unknown problem has occured
     else:
+        # Unknown problem has occured
         print("ERROR : Unknown problem has occured")
-        # Destruction of the optimizer  
-    info = opkc_v3.TaskInfo("Get_task")    
+    # Destruction of the optimizer  
+    info = opkc_v3.opk_taskInfo("Get_task")    
     print info, "task"     
-    info = opkc_v3.TaskInfo("Get_status")    
+    info = opkc_v3.opk_taskInfo("Get_status")    
     print info, "status"   
-    info = opkc_v3.TaskInfo("Get_iterations")    
+    info = opkc_v3.opk_taskInfo("Get_iterations")    
     print info, iteration
-    info = opkc_v3.TaskInfo("Get_evaluations")    
+    info = opkc_v3.opk_taskInfo("Get_evaluations")    
     print info, evaluation
-    info = opkc_v3.TaskInfo("Get_restarts")    
+    info = opkc_v3.opk_taskInfo("Get_restarts")    
     print info
-    info = opkc_v3.TaskInfo("Get_reason")    
+    info = opkc_v3.opk_taskInfo("Get_reason")    
     print info
     x_out = x.copy()    
-    opkc_v3.Close()   
+    opkc_v3.opk_close()   
 
     return x_out
