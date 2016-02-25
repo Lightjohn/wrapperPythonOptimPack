@@ -109,8 +109,8 @@ pl.matshow(x[0:size].reshape((NbLigne,NbColonne)),cmap=pl.cm.gray)
 pl.matshow(x[size:2*size].reshape((NbLigne,NbColonne)),cmap=pl.cm.gray)
 x_out = opkpy_v3.opk_minimize(x, fg, g, algorithm="nlcg", 
                               linesearch="cubic", nlcg="HagerZhang",
-                              limited=0, maxeval=50)      
-pl.matshow(x[0:size].reshape((NbLigne,NbColonne)),cmap=pl.cm.gray)
-pl.matshow(x[size:2*size].reshape((NbLigne,NbColonne)),cmap=pl.cm.gray)
+                              limited=0, maxeval=None, maxiter = None)      
+pl.matshow(x_out[0:size].reshape((NbLigne,NbColonne)),cmap=pl.cm.gray)
+pl.matshow(x_out[size:2*size].reshape((NbLigne,NbColonne)),cmap=pl.cm.gray)
 
 #################################################################################

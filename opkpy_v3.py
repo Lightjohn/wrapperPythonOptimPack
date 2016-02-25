@@ -35,18 +35,27 @@ import opkc_v3
 #############################################################################
 ##  A FAIRE
 
+## Il y a des problemes au niveau du type, des var sont declares comme "double"
+# mais selon le type ca change.
+
+# fmin marche pas : undefined value
+
+## linesearch : bien comprendre ce que c'est, si c'est un algo comme nlcg et
+# vlmb. 
+# Pareil pour bound
+
 ## voir comment tester un reel
 
-## avec verbose, ajouter les get_status
+## le get_method pour nlcg renvoit 520 qui ne correspond a aucune methode
 
-## Changer les valeurs de sortie pour get_s et get_y
-# les get_options et set_options ont des arguments compliques, a voir
-# pareil pour les fonctions specifiques d'nlcg
+##
+# method et flag pareil? 
+#pour vmlmb, il existe une structure "methode" mais pour les autres ce sont
+# des unsigned int. Pourquoi pas de conflit entre les types?
+# OPK_EMULATE_BLMVM est un flag
+# opk_vmlmb_method_t est la methode.
 
-## Verifier les noms des algos, leurs parametres d'entree sortie, p-e plus de description
-## Documenter mem, powell, verbose, linesearch autostep, nlcg
-
-## dans Iterate et TaskInfo attention a nlcg pas comme les autres 
+## finir taskinfo
 
 #############################################################################
 
@@ -74,22 +83,53 @@ It returns the value of the next task.
 """
 
 # Documentation of function opk_taskinfo.
-"""Performs the task given in parameter, regarding the current optimizer.
+"""Used to query some members of the optimizer instance.
 
 The input argument is the name of the action that needs to be 
 performed. It is a char string. Possible values are :
-    "Get_task" --> Returns the current task.
-    "Get_status" --> Returns the current status. 29 possible values.
-    "Get_iterations" --> Returns the number of iterations, supposeldy egal to
-                         iteration.
-    "Get_evaluations" --> Returns the number of evaluations, supposeldy egal 
-                          to evaluation.
-    "Get_restarts" --> Returns the number of times the algorithm has restarted.   
-    "Get_step" -->   
-    "Get_reason" --> Retrieves a textual description for a given status, the 
+    "get_method" --> Returns the minimization method used.
+                     See help - opk_minimize for the list of possible output.
+    "get_size" --> Returns the number of variables of the problem.
+    "get_type" --> Returns the type of the variables (float or double).
+    "get_task" --> Returns the current task. Possible output are :
+                   "OPK_TASK_START", "OPK_TASK_COMPUTE_FG", "OPK_TASK_NEW",
+                   "OPK_TASK_FINAL_X", "OPK_TASK_WARNING", "OPK_TASK_ERROR".
+    "get_status" --> Returns the current status. 29 possible values.
+                     See optimpack.h for the list of possible output.
+    "get_reason" --> Retrieves a textual description for a given status, the 
                      described status is obtained via Get_status. Relevant 
                      only for limited minimization.
-                     
+    "get_iterations" --> Returns the number of iterations, supposeldy egal to
+                         iteration.
+    "get_evaluations" --> Returns the number of evaluations, supposeldy egal 
+                          to evaluation.
+    "get_restarts" --> Returns the number of times the algorithm has restarted.    
+    "get_step" --> Returns the current step length.
+    "get_gnorm" --> Returns the Euclidean norm of the gradient.
+    "get_description" --> Returns a description of the minimization method.
+                         Maximum size of the description is 255 bytes.
+    "get_options" --> Returns the options (delta, epsilon, grtol, gatol, 
+                      stpmin, stpmax) of the optimizer.
+    "get_beta" --> Returns beta, the factor for the vector "y" of nlcg
+                   algorithm. 
+    "get_fmin" --> Returns fmin for the nlcg algorithm. 
+    "get_mp" --> Returns the actual number of memorized steps for vmlmb.
+    "get_s" --> Returns the variable difference "s[k-j]" where "k" is the
+                current iteration number. See below.
+    "get_y" --> Returns the variable difference "y[k-j]" where "k" is the
+                current iteration number. See below.
+                
+The second (optional) argument is used to get a given memorized variable 
+change. 
+Variable metric methods store variable and gradient changes for the few last
+steps to measure the effect of the Hessian.  Using pseudo-code notation the
+following `(s,y)` pairs are memorized:
+ * s[k-j] = x[k-j+1] - x[k-j]     // variable change
+ * y[k-j] = g[k-j+1] - g[k-j]     // gradient change
+with `x[k]` and `g[k]` the variables and corresponding gradient at `k`-th
+iteration and `j=1,...,mp` the relative index of the saved pair.
+See optimpack.h for help. 0 < j < mp
+ 
 The returned value is always a char string, even if it represents a double.
 """
 
@@ -108,7 +148,7 @@ NULL = 0
 
 def opk_minimize(x_in, fg, g, bl=NULL, bu=NULL, algorithm="nlcg", linesearch="quadratic", autostep="ShannoPhua",
                  nlcg="FletcherReeves", vmlmb="lbfgs", delta=DELTA_DEFAULT, epsilon=EPSILON_DEFAULT, gatol=1.0e-6,
-                 grtol=0.0, maxiter=500, maxeval=500, mem=5, powell=False, verbose=0, limited=NULL):
+                 grtol=0.0, maxiter=50, maxeval=50, mem=5, powell=False, verbose=0, limited=NULL):
     """Minimizes a function given a starting point and it's gradient.
     
     It keeps x_in untuched and returns the value of the final point x_out 
@@ -169,8 +209,10 @@ def opk_minimize(x_in, fg, g, bl=NULL, bu=NULL, algorithm="nlcg", linesearch="qu
     grtol --> Relative threshold for the norm or the projected gradient 
               (relative to GPINIT the norm of the initial projected gradient)
               for convergence. Default value is 0.0.
-    maxiter --> The maximum number of iteration. Default value is 500.
-    maxeval --> The maximum number of evaluation. Default value is 500.
+    maxiter --> The maximum number of iteration. Default value is 50.
+                If no limit is required, set to None.
+    maxeval --> The maximum number of evaluation. Default value is 50.
+                If no limit is required, set to None.
     mem --> Number of step memorized by the limited memory variable metric.
             Default value is 5.
     powell --> Default value is False.
@@ -268,22 +310,23 @@ def opk_minimize(x_in, fg, g, bl=NULL, bu=NULL, algorithm="nlcg", linesearch="qu
 
     # Beginning of the algorithm
     while True:
-        if (task == "OPK_TASK_COMPUTE_FG") and (iteration < maxiter) and \
-            (evaluation < maxeval) :
+        if (maxeval != None) and (evaluation > maxeval):
+            break
+        if (maxiter != None) and (iteration > maxiter):
+            break
+        if (task == "OPK_TASK_COMPUTE_FG"):
             # Caller must compute f(x) and g(x).
             evaluation += 1          
             fx = fg(x, g)  
-        elif (task == "OPK_TASK_NEW_X") and (iteration < maxiter) and \
-              (evaluation < maxeval) :
+        elif (task == "OPK_TASK_NEW_X") :
             # A new iterate is available                
             iteration += 1  
         else :
             break
         # Comment and iterate
         if verbose != NULL:
-            print"-----------  iteration n",iteration, ", evaluation n", evaluation, "  -----------"
-            print "task = ", task  
-        print "f(x) = ", fx
+            print "-----------  iteration n",iteration, ", evaluation n", evaluation, "  -----------"
+            print "f(x) = ", fx
             #print "x = ", x                
         task = opkc_v3.opk_iteration(x, fx, g)              
                               
@@ -292,35 +335,64 @@ def opk_minimize(x_in, fg, g, bl=NULL, bu=NULL, algorithm="nlcg", linesearch="qu
         print"Algorithm has converged in",iteration,"iterations and",evaluation,"evaluation. Solution is available"
     elif task == "OPK_TASK_WARNING":
         # Algorithm terminated with a warning
-        print("ERROR : Algorithm terminated with a warning")
+        print"ERROR : Algorithm terminated with a warning"
+        print "reason = ",opkc_v3.opk_taskInfo("get_reason")
     elif task == "OPK_TASK_ERROR":
         # An error has ocurred
-        print("ERROR : OPK_TASK_ERROR has occured")
+        print "ERROR : OPK_TASK_ERROR has occured"
+        print "reason = ",opkc_v3.opk_taskInfo("get_reason")
     elif task == "INPUT_ERROR":
         # Error in the variable input
-        print("ERROR : Input error, check all the input of function optimize")
+        print"ERROR : Input error, check all the input of function optimize"
     elif iteration >= maxiter:
         # Too much iterations, check OPK_TASK_NEW_X
-        print("WARNING : Too much iteration\n")
+        print"WARNING : Too much iteration\n"
     elif evaluation >= maxeval:
         # Too much evaluation of f and g, check OPK_TASK_COMPUTE_FG
-        print("WARNING : Too much evaluation\n")
+        print"WARNING : Too much evaluation\n"
     else:
         # Unknown problem has occured
-        print("ERROR : Unknown problem has occured")
-    # Destruction of the optimizer  
-#    info = opkc_v3.opk_taskInfo("Get_task")    
-#    print info, "task"     
-#    info = opkc_v3.opk_taskInfo("Get_status")    
-#    print info, "status"   
-#    info = opkc_v3.opk_taskInfo("Get_iterations")    
-#    print info, iteration
-#    info = opkc_v3.opk_taskInfo("Get_evaluations")    
-#    print info, evaluation
-#    info = opkc_v3.opk_taskInfo("Get_restarts")    
-#    print info
-#    info = opkc_v3.opk_taskInfo("Get_reason")    
-#    print info
+        print"ERROR : Unknown problem has occured"
+        print "reason = ",opkc_v3.opk_taskInfo("get_reason")   
+    # Destruction of the optimizer 
+
+    info = opkc_v3.opk_taskInfo("get_method")    
+    print "method = ",info
+    info = opkc_v3.opk_taskInfo("get_size")    
+    print "size = ",info
+    info = opkc_v3.opk_taskInfo("get_type")    
+    print "type = ",info   
+    info = opkc_v3.opk_taskInfo("get_task")    
+    print "tast = ",info   
+    info = opkc_v3.opk_taskInfo("get_status")    
+    print "status = ",info   
+    info = opkc_v3.opk_taskInfo("get_iterations")    
+    print "iteration = ",info, iteration
+    info = opkc_v3.opk_taskInfo("get_evaluations")    
+    print "evaluation = ",info, evaluation
+    info = opkc_v3.opk_taskInfo("get_restarts")    
+    print "restarts = ",info
+    info = opkc_v3.opk_taskInfo("get_reason")    
+    print "reason = ",info
+    info = opkc_v3.opk_taskInfo("get_step")    
+    print "step = ",info
+    info = opkc_v3.opk_taskInfo("get_gnorm")    
+    print "gnorm = ",info
+    info = opkc_v3.opk_taskInfo("get_description")    
+    print "description = ",info
+    info = opkc_v3.opk_taskInfo("get_options")    
+    print "options = ",info
+    info = opkc_v3.opk_taskInfo("get_beta")    
+    print "beta = ",info    
+    info = opkc_v3.opk_taskInfo("get_fmin")    
+    print "fmin = ",info    
+    info = opkc_v3.opk_taskInfo("get_mp")    
+    print "mp = ",info    
+    info = opkc_v3.opk_taskInfo("get_s", 1)    
+    print "s = ",info 
+    info = opkc_v3.opk_taskInfo("get_y", 1)    
+    print "y = ",info 
+      
     x_out = x.copy()    
     opkc_v3.opk_close()   
 

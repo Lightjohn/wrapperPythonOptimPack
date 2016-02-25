@@ -26,7 +26,7 @@ opk_nlcg_t *_nlcg;        		// non-linear conjugate gradient optimizer
 opk_vmlmb_t *_vmlmb;     	        // quasi-newton optimizer
 opk_optimizer_t *_limited_optimizer;    // limited memory optimizer
 
-// Options
+// Options such as delta, epsilon, gatol, etc
 opk_nlcg_options_t _options_nlcg;	// Options relative to the nlcg optimizer
 opk_vmlmb_options_t _options_vmlmb;     // Options relative to the vmlmb optimizer
 
@@ -34,6 +34,10 @@ opk_vmlmb_options_t _options_vmlmb;     // Options relative to the vmlmb optimiz
 opk_type_t _type = OPK_DOUBLE;		// Type of the variables (x, f and g). Double or float
 opk_index_t _problem_size;		// Number of variables of the problem
 
+// Methods 
+unsigned int _nlcg_method = OPK_NLCG_DEFAULT;
+unsigned int _vmlmb_method = OPK_LBFGS;    
+unsigned int _limited_method = OPK_NLCG_DEFAULT;
 
 /* ------------------------------------------------------------------------------------------
 ------------------------------- FONCTION INITIALISATION -------------------------------------
@@ -48,9 +52,6 @@ opk_initialisation(PyObject * self, PyObject * args, PyObject * keywds)
     // Parameters of the minimization problem. They will receive values according to what the user asks
     opk_lnsrch_t *lnsrch = NULL;
     int autostep = 0;
-    unsigned int nlcg_method = OPK_NLCG_DEFAULT;
-    unsigned int vmlmb_method = OPK_LBFGS;    
-    unsigned int limited_method = nlcg_method;
 
     // Input arguments in c
     void *x;
@@ -142,7 +143,7 @@ opk_initialisation(PyObject * self, PyObject * args, PyObject * keywds)
     npy_intp *shape = PyArray_DIMS(x_arr);
     _problem_size = shape[0];
     if (nd != 1) {
-        printf("We need 1D arrays");
+	fprintf(fichier, "We need 1D arrays\n");
         return NULL;
     }
     if (single == FALSE) {
@@ -168,7 +169,7 @@ opk_initialisation(PyObject * self, PyObject * args, PyObject * keywds)
     } else if (strcasecmp(linesrch_name, "nonmonotone") == 0) {
         lnsrch = opk_lnsrch_new_nonmonotone(mem, 1e-4, 0.1, 0.9);
     } else {
-        printf("# Unknown line search method\n");
+	fprintf(fichier, "Unknown line search method\n");
         lnsrch = NULL;
         return NULL;
     }
@@ -185,41 +186,41 @@ opk_initialisation(PyObject * self, PyObject * args, PyObject * keywds)
         {autostep = OPK_NLCG_BARZILAI_BORWEIN;}
     */
     else {
-        printf("# Unknown line search method\n");
+	fprintf(fichier, "Unknown line search method\n");
         return NULL;
     }
 
     // nlcg method
     if (strcasecmp(nlcgmeth_name, "FletcherReeves") == 0) {
-        nlcg_method = OPK_NLCG_FLETCHER_REEVES;
+        _nlcg_method = OPK_NLCG_FLETCHER_REEVES;
     } else if (strcasecmp(nlcgmeth_name, "HestenesStiefel") == 0) {
-        nlcg_method = OPK_NLCG_HESTENES_STIEFEL;
+        _nlcg_method = OPK_NLCG_HESTENES_STIEFEL;
     } else if (strcasecmp(nlcgmeth_name, "PolakRibierePolyak") == 0) {
-        nlcg_method = OPK_NLCG_POLAK_RIBIERE_POLYAK;
+        _nlcg_method = OPK_NLCG_POLAK_RIBIERE_POLYAK;
     } else if (strcasecmp(nlcgmeth_name, "Fletcher") == 0) {
-        nlcg_method = OPK_NLCG_FLETCHER;
+        _nlcg_method = OPK_NLCG_FLETCHER;
     } else if (strcasecmp(nlcgmeth_name, "LiuStorey") == 0) {
-        nlcg_method = OPK_NLCG_LIU_STOREY;
+        _nlcg_method = OPK_NLCG_LIU_STOREY;
     } else if (strcasecmp(nlcgmeth_name, "DaiYuan") == 0) {
-        nlcg_method = OPK_NLCG_DAI_YUAN;
+        _nlcg_method = OPK_NLCG_DAI_YUAN;
     } else if (strcasecmp(nlcgmeth_name, "PerryShanno") == 0) {
-        nlcg_method = OPK_NLCG_PERRY_SHANNO;
+        _nlcg_method = OPK_NLCG_PERRY_SHANNO;
     } else if (strcasecmp(nlcgmeth_name, "HagerZhang") == 0) {
-        nlcg_method = OPK_NLCG_HAGER_ZHANG;
-    } else {
-        printf("# Unknown line search method for nlcg\n");
+        _nlcg_method = OPK_NLCG_HAGER_ZHANG;
+    } else {;
+	fprintf(fichier, "Unknown line search method for nlcg\n");
         return NULL;
     }
 
     // vmlmb method
     if (strcasecmp(vmlmbmeth_name, "blmvm") == 0) {
-        vmlmb_method = OPK_BLMVM;
+        _vmlmb_method = OPK_BLMVM;
     } else if (strcasecmp(vmlmbmeth_name, "vmlmb") == 0) {
-        vmlmb_method = OPK_VMLMB;
+        _vmlmb_method = OPK_VMLMB;
     } else if (strcasecmp(vmlmbmeth_name, "lbfgs") == 0) {
-        vmlmb_method = OPK_LBFGS;
+        _vmlmb_method = OPK_LBFGS;
     } else {
-        printf("# Unknown line search method for vmlmb\n");
+	fprintf(fichier, "Unknown line search method for vmlmb\n");
         return NULL;
     }
 
@@ -235,10 +236,10 @@ opk_initialisation(PyObject * self, PyObject * args, PyObject * keywds)
 
     //  ----------------------------- BIT TO BIT COMPARISON ---------------------------------
     if (powell) {
-        nlcg_method |= OPK_NLCG_POWELL;
+        _nlcg_method |= OPK_NLCG_POWELL;
     }
     if (autostep != 0) {
-        nlcg_method |= autostep;
+        _nlcg_method |= autostep;
     }
     //  -------------------------------------------------------------------------------------
 
@@ -247,14 +248,15 @@ opk_initialisation(PyObject * self, PyObject * args, PyObject * keywds)
     // _vspace only relies on the size of x
     _vspace = opk_new_simple_double_vector_space(_problem_size);
     if (_vspace == NULL) {
-        printf("# Failed to allocate vector space\n");
+
+	fprintf(fichier, "Failed to allocate vector space\n");
         return NULL;
     }
     // x is transformed into a vector of the new space vector vspace
     // Should be free instead of NULL
     _vx = opk_wrap_simple_double_vector(_vspace, x, NULL, x);     
     if (_vx == NULL) {
-        printf("# Failed to wrap vectors\n");
+	fprintf(fichier, "Failed to wrap vectors\n");
         return NULL;
     }
     //  -------------------------------------------------------------------------------------
@@ -272,14 +274,14 @@ opk_initialisation(PyObject * self, PyObject * args, PyObject * keywds)
     if (bound_given == 1) {
         lower = opk_new_bound(_vspace, OPK_BOUND_VECTOR, vbl);
         if (lower == NULL) {
-            printf("# Failed to wrap lower bounds\n");
+	    fprintf(fichier, "Failed to wrap lower bounds\n");
             return NULL;
         }
         upper = NULL;
     } else if (bound_given == 2) {
         upper = opk_new_bound(_vspace, OPK_BOUND_VECTOR, vbu);
         if (upper == NULL) {
-            printf("# Failed to wrap upper bounds\n");
+	    fprintf(fichier, "Failed to wrap upper bounds\n");
             return NULL;
         }
         lower = NULL;
@@ -287,11 +289,11 @@ opk_initialisation(PyObject * self, PyObject * args, PyObject * keywds)
         lower = opk_new_bound(_vspace, OPK_BOUND_VECTOR, vbl);
         upper = opk_new_bound(_vspace, OPK_BOUND_VECTOR, vbu);
         if (lower == NULL) {
-            printf("# Failed to wrap lower bounds\n");
+	    fprintf(fichier, "Failed to wrap lower bounds\n");
             return NULL;
         }
         if (upper == NULL) {
-            printf("# Failed to wrap upper bounds\n");
+	    fprintf(fichier, "Failed to wrap upper bounds\n");
             return NULL;
         }
     } else {
@@ -309,19 +311,19 @@ opk_initialisation(PyObject * self, PyObject * args, PyObject * keywds)
         if (strcasecmp(_algorithm_name, "vmlmb") == 0) {
             // Creation of the optimizer
             _vmlmb =
-                opk_new_vmlmb_optimizer(_vspace, mem, vmlmb_method, lower,
+                opk_new_vmlmb_optimizer(_vspace, mem, _vmlmb_method, lower,
                                         upper, lnsrch);
             if (_vmlmb == NULL) {
-                printf("# Failed to create VMLMB optimizer\n");
+	        fprintf(fichier, "Failed to create VMLMB optimizer\n");
                 return NULL;
             }
-            // creation of _vgp
+            // Creation of _vgp
             _vgp = opk_vcreate(_vspace);
             if (_vgp == NULL) {
-                printf("# Failed to create projected gradient vector\n");
+	        fprintf(fichier, "Failed to create projected gradient vector\n");
                 return NULL;
             }
-            // option.gatol = gatol? Otherwise the received value "gatol" is lost?
+            // Options are set
             opk_get_vmlmb_options(&_options_vmlmb, _vmlmb);
             _options_vmlmb.gatol = grtol;
             _options_vmlmb.grtol = gatol;
@@ -332,7 +334,7 @@ opk_initialisation(PyObject * self, PyObject * args, PyObject * keywds)
                 _options_vmlmb.epsilon = epsilon;
             }
             if (opk_set_vmlmb_options(_vmlmb, &_options_vmlmb) != OPK_SUCCESS) {
-                printf("# Bad VMLMB options\n");
+      	        fprintf(fichier, "Bad VMLMB options\n");
                 return NULL;
             }
             _task = opk_start_vmlmb (_vmlmb, _vx);
@@ -340,9 +342,9 @@ opk_initialisation(PyObject * self, PyObject * args, PyObject * keywds)
         }
         // NLCG ---------------------------------  
         else if (strcasecmp(_algorithm_name, "nlcg") == 0) {
-            _nlcg = opk_new_nlcg_optimizer(_vspace, nlcg_method, lnsrch);
+            _nlcg = opk_new_nlcg_optimizer(_vspace, _nlcg_method, lnsrch);
             if (_nlcg == NULL) {
-                printf("# Failed to create NLCG optimizer\n");
+	        fprintf(fichier, "Failed to create NLCG optimizer\n");
                 return NULL;
             }
             opk_get_nlcg_options(&_options_nlcg, _nlcg);
@@ -355,14 +357,14 @@ opk_initialisation(PyObject * self, PyObject * args, PyObject * keywds)
                 _options_nlcg.epsilon = epsilon;
             }
             if (opk_set_nlcg_options(_nlcg, &_options_nlcg) != OPK_SUCCESS) {
-                printf("# Bad NLCG options\n");
+	        fprintf(fichier, "Bad NLCG options\n");
                 return NULL;
             }
             _task = opk_start_nlcg(_nlcg, _vx);
         }
 
         else {
-            printf("# Bad algorithm\n");
+	    fprintf(fichier, "Bad algorithm\n");
             return NULL;
         }
     }
@@ -372,42 +374,41 @@ opk_initialisation(PyObject * self, PyObject * args, PyObject * keywds)
         opk_algorithm_t limited_algorithm;
         if (strcasecmp(_algorithm_name, "nlcg") == 0) {
             limited_algorithm = OPK_ALGORITHM_NLCG;
-            limited_method = nlcg_method;
+            _limited_method = _nlcg_method;
         } else if (strcasecmp(_algorithm_name, "vmlmb") == 0) {
             limited_algorithm = OPK_ALGORITHM_VMLMB;
-            limited_method = vmlmb_method;
+            _limited_method = _vmlmb_method;
         } else {
-            printf("# Bad algorithm\n");
+	    fprintf(fichier, "Bad algorithm\n");
             return NULL;
         }
         // optimizer
         if (bound_given == 1) {
             _limited_optimizer =
                 opk_new_optimizer(limited_algorithm, _type, shape[0], mem,
-                                  limited_method, _type, &bl, OPK_BOUND_NONE,
+                                  _limited_method, _type, &bl, OPK_BOUND_NONE,
                                   NULL, lnsrch);
         } else if (bound_given == 2) {
             _limited_optimizer =
                 opk_new_optimizer(limited_algorithm, _type, shape[0], mem,
-                                  limited_method, OPK_BOUND_NONE, NULL, _type,
+                                  _limited_method, OPK_BOUND_NONE, NULL, _type,
                                   &bu, lnsrch);
         } else if (bound_given == 3) {
             _limited_optimizer =
                 opk_new_optimizer(limited_algorithm, _type, shape[0], mem,
-                                  limited_method, _type, &bl, _type, &bu,
+                                  _limited_method, _type, &bl, _type, &bu,
                                   lnsrch);
         } else {
             _limited_optimizer =
                 opk_new_optimizer(limited_algorithm, _type, shape[0], mem,
-                                  limited_method, OPK_BOUND_NONE, NULL,
+                                  _limited_method, OPK_BOUND_NONE, NULL,
                                   OPK_BOUND_NONE, NULL, lnsrch);
         }
 
         if (_limited_optimizer == NULL) {
-            printf("# Failed to create limited optimizer\n");
+	    fprintf(fichier, "Failed to create limited optimizer\n");
             return NULL;
         }
-
         _task = opk_start(_limited_optimizer, _type, shape[0], x);
     }
 
@@ -535,38 +536,128 @@ opk_taskInfo (PyObject * self, PyObject * args)
 {
     // Input arguments
     char *QuelleFonction;
+    int j = -1;
     // Output arguments
     char * return_c = "FAILURE : No value returned for TaskInfo";
-    // Output arguments	is their local type		
-    opk_task_t local_task=OPK_TASK_WARNING;
-    opk_status_t local_status=OPK_TASK_WARNING;
+    // Output arguments	with their local type	
+    unsigned int local_method = -1;
+    opk_index_t local_size = -1; 	
+    opk_task_t local_task = OPK_TASK_WARNING;
+    opk_status_t local_status = OPK_TASK_WARNING;
     opk_index_t local_iteration = -1;
     opk_index_t local_evaluation = -1;
     opk_index_t local_restart = -1;
     char local_reason[80];
-   // double local_step = -1;
-   // opk_status_t local_get_options;
-   // opk_status_t local_set_options;   
+    double local_step = -1;
+    double local_gnorm = -1;
+    char local_description[255];  
+    double local_beta = -1;
+    double local_fmin = -1;
+    opk_index_t local_mp = -1;
+    // Options variable
+    opk_nlcg_options_t local_nlcg_options;
+    opk_vmlmb_options_t local_vmlmb_options;
+    double local_delta = -1;
+    double local_epsilon = -1;
+    double local_grtol = -1;
+    double local_gatol = -1;
+    double local_stpmin = -1;
+    double local_stpmax = -1;
+    opk_vector_t *opk_local_vector_s;
+    opk_vector_t *opk_local_vector_y;
+
     // Other arguments
     double Value_d = -1;
-    char Value_c[80];
+    char Value_c[255];
 
-    // If need be, required values can be printed in "text.txt"
-    FILE* fichier = NULL;
-    fichier = fopen("text.txt", "w");
-    if (fichier == NULL)
+    // Print the error messages in an external file "text.txt"
+    FILE* file = NULL;
+    file = fopen("s_and_y_vectors.txt", "w");
+    if (file == NULL)
     {
 	return Py_None;
     }
-    fprintf(fichier, "valeur de limited %i \n", _limited);
 
     // Conversion
-    if (!PyArg_ParseTuple (args, "s",&QuelleFonction))
+    if (!PyArg_ParseTuple (args, "s|i", &QuelleFonction, &j))
        {return NULL;}
 
+    // METHOD ------------ 
+    if (strcmp(QuelleFonction, "get_method") == 0)
+    {
+	if (strcasecmp (_algorithm_name, "nlcg") == 0) 
+	{
+            local_method = _nlcg_method;
+            if (local_method == OPK_NLCG_DEFAULT)
+        	{return_c = "OPK_NLCG_DEFAULT";}
+            else if (local_method == OPK_NLCG_FLETCHER_REEVES)
+        	{return_c = "OPK_NLCG_FLETCHER_REEVES";}   
+            else if (local_method == OPK_NLCG_HESTENES_STIEFEL)
+       	        {return_c = "OPK_NLCG_HESTENES_STIEFEL";}
+            else if (local_method == OPK_NLCG_POLAK_RIBIERE_POLYAK)
+        	{return_c = "OPK_NLCG_POLAK_RIBIERE_POLYAK";}
+            else if (local_method == OPK_NLCG_FLETCHER)
+        	{return_c = "OPK_NLCG_FLETCHER";}
+            else if (local_method == OPK_NLCG_LIU_STOREY)
+        	{return_c = "OPK_NLCG_LIU_STOREY";}    
+            else if (local_method == OPK_NLCG_DAI_YUAN)
+    	        {return_c = "OPK_NLCG_DAI_YUAN";}
+            else if (local_method == OPK_NLCG_PERRY_SHANNO)
+    	        {return_c = "OPK_NLCG_PERRY_SHANNO";}
+            else if (local_method == OPK_NLCG_HAGER_ZHANG)
+    	        {return_c = "OPK_NLCG_HAGER_ZHANG";}
+            else if (local_method == OPK_NLCG_POWELL)
+    	        {return_c = "OPK_NLCG_POWELL";}
+            else if (local_method == OPK_NLCG_SHANNO_PHUA)
+    	        {return_c = "OPK_NLCG_SHANNO_PHUA";}
+            else
+    	        {
+	        Value_d = local_method;
+                sprintf(Value_c, "%lf", Value_d);
+	        return_c = Value_c;
+		return_c = "ERROR: get_method has failed";
+		}
+        }
+	else if (strcasecmp (_algorithm_name, "vmlmb") == 0) 
+	{
+	    if (_limited == 0)
+	    {
+ 	        sprintf(Value_c, "%s", opk_get_vmlmb_method_name(_vmlmb));
+		return_c = Value_c;
+	    }
+	    else
+	    {
+ 	        sprintf(Value_c, "WARNING : Method is irrelevant for limited minimization");
+		return_c = Value_c;
+	    }
+	}
+    }
+
+    // SIZE ------------ 
+    else if (strcmp(QuelleFonction, "get_size") == 0)
+    {
+	local_size = _problem_size;
+        if (local_size != -1)
+	{
+	    Value_d = local_size;
+            sprintf(Value_c, "%lf", Value_d);
+	    return_c = Value_c;
+	} 
+        else
+    	    {return_c ="ERROR: get_size has failed";}
+    }
+
+    // TYPE ------------ 
+    else if (strcmp(QuelleFonction, "get_type") == 0)
+    {
+	if(_type == OPK_DOUBLE)
+	    {return_c = "OPK_DOUBLE";}
+	else 
+	    {return_c = "OPK_FLOAT";}	
+    }
 
     // TASK ------------ 
-    if (strcmp(QuelleFonction, "Get_task") == 0)
+    else if (strcmp(QuelleFonction, "get_task") == 0)
     {
         // The asked value is stored in the appropriate variable
 	if (_limited == 0)
@@ -593,11 +684,11 @@ opk_taskInfo (PyObject * self, PyObject * args)
         else if (local_task == OPK_TASK_ERROR)
     	    {return_c = "OPK_TASK_ERROR";}
         else
-    	    {return_c = "OPK_GET_TASK_FAILURE";}
+    	    {return_c = "ERROR: get_task has failed";}
     }
 
     // STATUS ------------ 
-    else if (strcmp(QuelleFonction, "Get_status") == 0)
+    else if (strcmp(QuelleFonction, "get_status") == 0)
     {
 	if (_limited == 0)
 	{
@@ -668,11 +759,26 @@ opk_taskInfo (PyObject * self, PyObject * args)
 	else if (local_status == OPK_TOO_MANY_ITERATIONS)
 	    {return_c = "OPK_TOO_MANY_ITERATIONS";}
         else
-    	    {return_c = "OPK_GET_STATUS_FAILURE";}
+    	    {return_c = "ERROR: get_status has failed";}
+    }
+
+    // REASON ------------ 
+    else if (strcmp(QuelleFonction, "get_reason") == 0)
+    {
+	if (_limited == 0)
+	{
+	     if (strcasecmp (_algorithm_name, "nlcg") == 0) 
+	         {sprintf(local_reason, "%s",opk_get_reason(opk_get_nlcg_status(_nlcg)));}
+	     else if (strcasecmp (_algorithm_name, "vmlmb") == 0) 
+	         {sprintf(local_reason, "%s",opk_get_reason(opk_get_vmlmb_status(_vmlmb)));}
+	}
+	else
+	    {sprintf(local_reason, "%s",opk_get_reason(opk_get_status(_limited_optimizer)));}
+	return_c = local_reason;
     }
 
     // ITERATION ------------ 
-    else if (strcmp(QuelleFonction, "Get_iterations") == 0)
+    else if (strcmp(QuelleFonction, "get_iterations") == 0)
     {
 	if (_limited == 0)
 	{
@@ -690,11 +796,11 @@ opk_taskInfo (PyObject * self, PyObject * args)
 	    return_c = Value_c;
 	} 
         else
-    	    {return_c = "OPK_GET_ITERATION_FAILURE";}
+    	    {return_c = "ERROR: get_iterations has failed";}
     }
 
     // EVALUATION ------------ 
-    if (strcmp(QuelleFonction, "Get_evaluations") == 0)
+    else if (strcmp(QuelleFonction, "get_evaluations") == 0)
     {
 	if (_limited == 0)
 	{
@@ -713,11 +819,11 @@ opk_taskInfo (PyObject * self, PyObject * args)
 	    return_c = Value_c;
 	}  
         else
-    	    {return_c = "OPK_GET_EVALUATION_FAILURE";}    
+    	    {return_c = "ERROR: get_evaluations has failed";}
     }
 
     // RESTART ------------ 
-    if (strcmp(QuelleFonction, "Get_restarts") == 0)
+    else if (strcmp(QuelleFonction, "get_restarts") == 0)
     {
 	if (_limited == 0)
 	{
@@ -736,152 +842,216 @@ opk_taskInfo (PyObject * self, PyObject * args)
 	    return_c = Value_c;
 	}  
         else
-    	    {return_c = "OPK_GET_RESTART_FAILURE";} 
+    	    {return_c = "ERROR: get_restarts has failed";}
     }
 
-    // REASON ------------ 
-    if (strcmp(QuelleFonction, "Get_reason") == 0)
+    // STEP ------------
+    else if (strcmp(QuelleFonction, "get_step") == 0)
     {
 	if (_limited == 0)
-	    {sprintf(local_reason, "REASON_IRRELEVANT_FOR_NON_LIMITED_MINIMIZATION");}
+	{
+ 	    if (strcasecmp (_algorithm_name, "nlcg") == 0) 
+	        {local_step = opk_get_nlcg_step(_nlcg);}
+	    else if (strcasecmp (_algorithm_name, "vmlmb") == 0) 
+	        {local_step = opk_get_vmlmb_step(_vmlmb);}
+	}
+	else
+	    {local_step = opk_get_step(_limited_optimizer);}
+
+        if (local_step != -1)
+	{
+            sprintf(Value_c, "%lf", local_step);
+	    return_c = Value_c;
+	}   
+        else
+    	    {return_c = "ERROR: get_step has failed";}
+    }
+
+    // GNORM ------------
+    else if (strcmp(QuelleFonction, "get_gnorm") == 0)
+    {
+	if (_limited == 0)
+	{
+ 	    if (strcasecmp (_algorithm_name, "nlcg") == 0) 
+	        {local_gnorm = opk_get_nlcg_gnorm(_nlcg);}
+	    else if (strcasecmp (_algorithm_name, "vmlmb") == 0) 
+	        {local_gnorm = opk_get_vmlmb_gnorm(_vmlmb);}
+	}
+	else
+	    {local_gnorm = opk_get_gnorm(_limited_optimizer);}
+ 
+        if (local_gnorm != -1)
+	{
+            sprintf(Value_c, "%lf", local_gnorm);
+	    return_c = Value_c;
+	}   
+        else
+    	    {return_c = "ERROR: get_gnorm has failed";}
+    }
+
+    // DESCRIPTION ------------ 
+    else if (strcmp(QuelleFonction, "get_description") == 0)
+    {
+	if (_limited == 0)
+	{
+	     if (strcasecmp (_algorithm_name, "nlcg") == 0) 
+	         {opk_get_nlcg_description(local_description,
+		  sizeof(local_description), _nlcg);}
+	     else if (strcasecmp (_algorithm_name, "vmlmb") == 0) 
+	         {opk_get_vmlmb_description(local_description,
+		  sizeof(local_description), _vmlmb);}
+	}
+	else
+	    {opk_get_description(local_description, sizeof(local_description), 		     		     _limited_optimizer);}  
+
+        if (local_description != NULL)
+	    {return_c = local_description;}  
+        else
+    	    {return_c = "ERROR: get_description has failed";} 
+ 	
+    }
+
+    // GET_OPTIONS ------------
+    else if (strcmp(QuelleFonction, "get_options") == 0)
+    {
+	if (strcasecmp (_algorithm_name, "nlcg") == 0) 
+        {
+            if (_limited == 0)
+                {local_status = opk_get_nlcg_options(&local_nlcg_options, _nlcg);}
+	    else 
+		{local_status = opk_get_options(&local_nlcg_options, _limited_optimizer);}
+	    local_delta = local_nlcg_options.delta;
+	    local_epsilon = local_nlcg_options.epsilon;
+	    local_grtol = local_nlcg_options.grtol;
+	    local_gatol = local_nlcg_options.gatol;
+	    local_stpmin = local_nlcg_options.stpmin;
+	    local_stpmax = local_nlcg_options.stpmax;
+	}
+	else if (strcasecmp (_algorithm_name, "vmlmb") == 0) 
+	{
+            if (_limited == 0)
+                {local_status = opk_get_vmlmb_options(&local_vmlmb_options, _vmlmb);}
+	    else 
+		{local_status = opk_get_options(&local_vmlmb_options, _limited_optimizer);}
+	    local_delta = local_vmlmb_options.delta;
+	    local_epsilon = local_vmlmb_options.epsilon;
+	    local_grtol = local_vmlmb_options.grtol;
+	    local_gatol = local_vmlmb_options.gatol;
+	    local_stpmin = local_vmlmb_options.stpmin;
+	    local_stpmax = local_vmlmb_options.stpmax;
+	} 
+        if (local_status == OPK_SUCCESS)
+	{
+            sprintf(Value_c, "DELTA = %g \nEPSILON = %g \nGRTOL = %g \nGATOL = %g 		            \nSTPMIN = %g \nSTPMAX = %g \n", local_delta, local_epsilon, local_grtol,
+		    local_gatol, local_stpmin, local_stpmax);
+	    return_c = Value_c;
+	}
+	else
+    	    {return_c = "ERROR: get_options has failed";}
+    }
+
+    // BETA ------------ 
+    else if (strcmp(QuelleFonction, "get_beta") == 0)
+    {
+	if ((strcasecmp (_algorithm_name, "vmlmb") == 0) || (_limited == 1))
+	    {sprintf(Value_c, "WARNING : beta relevant only for nlcg non-limited minimization");}
 	else
 	{
-	    sprintf(local_reason, "%s",opk_get_reason(opk_get_status(_limited_optimizer)));
-	}
-	return_c = local_reason;
+	    local_beta = opk_get_nlcg_beta(_nlcg);
+	    if (local_beta != -1)
+		{sprintf(Value_c, "%lf", local_beta);}
+	    else
+		{sprintf(Value_c, "ERROR: get_beta has failed");}
+        }
+        return_c = Value_c;
     }
-/*
-// ------------ STEP
-    else if (strcmp(QuelleFonction, "Get_step") == 0)
+
+    // FMIN ------------ 
+    else if (strcmp(QuelleFonction, "get_fmin") == 0)
     {
- 	if (strcasecmp (_algorithm_name, "nlcg") == 0) 
-	    {local_step = opk_get_nlcg_step(nlcg);}
-	else if (strcasecmp (_algorithm_name, "lbfgs") == 0)
-	    {local_step = opk_get_lbfgs_step(lbfgs);}
-	else if (strcasecmp (_algorithm_name, "vmlm") == 0)
-	    {local_step = opk_get_vmlm_step(vmlm);}
-	else if (strcasecmp (_algorithm_name, "vmlmn") == 0)
-	    {local_step = opk_get_vmlmn_step(vmlmn);}
-	else 
-	    {local_step = opk_get_vmlmb_step(vmlmb);}
-        if (local_step != -1)
+	if (strcasecmp (_algorithm_name, "nlcg") != 0) 
+	    {sprintf(Value_c,"WARNING : fmin relevant only for nlcg non-limited minimization");}
+	else
 	{
-            sprintf(Value_c, "%lf", local_step);
-	    return_c = Value_c;
-	}   
-        else
-    	    {return_c = "OPK_GET_STEP_FAILURE";} 
+	    local_status = opk_get_nlcg_fmin(_nlcg, &local_fmin);
+	    if (local_status == OPK_SUCCESS)
+		{sprintf(Value_c, "%lf", local_fmin);}
+	    else
+		{sprintf(Value_c, "ERROR: get_fmin has failed");} // OPK_UNDEFINED_VALUE
+        }
+	
+        return_c = Value_c;
     }
-*/
 
-/* // ------------ GET_OPTIONS
-    else if (strcmp(QuelleFonction, "Get_options") == 0)
+    // MP ------------ 
+    else if (strcmp(QuelleFonction, "get_mp") == 0)
     {
- 	if (strcasecmp (_algorithm_name, "nlcg") == 0) 
-	    {local_step = opk_get_nlcg_options(nlcg);}
-	else if (strcasecmp (_algorithm_name, "lbfgs") == 0)
-	    {local_step = opk_get_lbfgs_options(lbfgs);}
-	else if (strcasecmp (_algorithm_name, "vmlm") == 0)
-	    {local_step = opk_get_vmlm_options(vmlm);}
-	else if (strcasecmp (_algorithm_name, "vmlmn") == 0)
-	    {local_step = opk_get_vmlmn_options(vmlmn);}
-	else 
-	    {local_step = opk_get_vmlmb_options(vmlmb);}
-        if (local_step != -1)
+	if ((strcasecmp (_algorithm_name, "nlcg") == 0) || (_limited == 1))
+	    {sprintf(Value_c, "WARNING : beta relevant only for vmlmb non-limited minimization");}
+	else
 	{
-            sprintf(Value_c, "%lf", local_step);
-	    return_c = Value_c;
-	}   
-        else
-    	    {return_c = "OPK_GET_STEP_FAILURE";} 
+	    local_mp = opk_get_vmlmb_mp(_vmlmb, local_mp);
+	    if (local_mp != -1)
+	    {
+		Value_d = local_mp;
+		sprintf(Value_c, "%lf", Value_d);
+	    }
+	    else
+		{sprintf(Value_c,"ERROR: get_mp has failed");}
+        }
+        return_c = Value_c;
     }
-// ------------ SET_OPTIONS
-    else if (strcmp(QuelleFonction, "Set_options") == 0)
+
+    // s ------------ 
+    else if (strcmp(QuelleFonction, "get_s") == 0)
     {
- 	if (strcasecmp (_algorithm_name, "nlcg") == 0) 
-	    {local_step = opk_set_nlcg_options(nlcg);}
-	else if (strcasecmp (_algorithm_name, "lbfgs") == 0)
-	    {local_step = opk_set_lbfgs_options(lbfgs);}
-	else if (strcasecmp (_algorithm_name, "vmlm") == 0)
-	    {local_step = opk_set_vmlm_options(vmlm);}
-	else if (strcasecmp (_algorithm_name, "vmlmn") == 0)
-	    {local_step = opk_set_vmlmn_options(vmlmn);}
-	else 
-	    {local_step = opk_set_vmlmb_options(vmlmb);}
-        if (local_step != -1)
+	if ((strcasecmp (_algorithm_name, "nlcg") == 0) || (_limited == 1))
+	    {sprintf(Value_c, "WARNING : s relevant only for vmlmb non-limited minimization");}
+	else
 	{
-            sprintf(Value_c, "%lf", local_step);
-	    return_c = Value_c;
-	}   
-        else
-    	    {return_c = "OPK_GET_STEP_FAILURE";} 
+	    opk_local_vector_s = opk_get_vmlmb_s(_vmlmb, j);
+	    if (j == -1)
+		{sprintf(Value_c, "WARNING : make sure a value has been set for j");}
+	    else if (opk_local_vector_s == NULL)
+		{sprintf(Value_c, "WARNING : j is out of bound");}
+	    else
+	    {
+		// s is written in "s_and_y_vectors.txt" 
+		opk_vprint(file, "vector_s", opk_local_vector_s, -1); 
+		sprintf(Value_c, "s Has been written in 's_and_y_vectors.txt'");
+	    }
+        }
+        return_c = Value_c;
     }
- // ------------ s
-    else if (strcmp(QuelleFonction, "Get_s") == 0)
+
+    // y ------------ 
+    else if (strcmp(QuelleFonction, "get_y") == 0)
     {
-	if (strcasecmp (_algorithm_name, "vmlmn") != 0)
-	    {return_c = "ERROR : Get_s is relevant only with vmlmn algorithm";}
-	else 
-	    {local_vmlmn = opk_get_vmlmn_s(vmlmb, k);}
-
-        if (local_vmlmn == OPK_SUCCESS)
-    	    {return_c = "OPK_SUCCESS";}   
-        else
-    	    {return_c = "OPK_GET_S_FAILURE";}
-    }
-// ------------ y
-    else if (strcmp(QuelleFonction, "Get_y") == 0)
-    {
-	if (strcasecmp (_algorithm_name, "vmlmn") != 0)
-	    {return_c = "ERROR : Get_y is relevant only with vmlmn algorithm";}
-	else 
-	    {local_vmlmn = opk_get_vmlmn_y(vmlmb, k);}
-
-        if (local_vmlmn == OPK_SUCCESS)
-    	    {return_c = "OPK_SUCCESS";}   
-        else
-    	    {return_c = "OPK_GET_Y_FAILURE";}
+	if ((strcasecmp (_algorithm_name, "nlcg") == 0) || (_limited == 1))
+	    {sprintf(Value_c, "WARNING : y relevant only for vmlmb non-limited minimization");}
+	else
+	{
+	    opk_local_vector_y = opk_get_vmlmb_y(_vmlmb, j);
+	    if (j == -1)
+		{sprintf(Value_c, "WARNING : make sure a value has been set for j");}
+	    else if (opk_local_vector_y == NULL)
+		{sprintf(Value_c, "WARNING : j is out of bound");}
+	    else
+	    {
+		opk_vprint(file, "vector_y", opk_local_vector_y, -1); 
+		sprintf(Value_c, "y Has been written in 's_and_y_vectors.txt'");
+	    }
+        }
+        return_c = Value_c;
     }
 
-// ------------ WRONG INPUT
+    // ------------ WRONG INPUT
     else
-	{return_c = "WRONG INPUT, CHECK FUNCTION HELP FOR MORE DETAILS";}
+	{return_c = "ERROR : taskinfo wrong input, check function help for more details";}
 
-// Pour nlcg, differentes fonctions
-    if (strcmp(QuelleFonction, "Get_fmin") == 0)
-    {
- 	if (strcasecmp (_algorithm_name, "nlcg") != 0) 
-	    {return_c = "ERROR : Get_fmin is relevant only with vmlmn algorithm";}
-	else 
-	    {local_status_fmin = opk_get_nlcg_fmin(nlcg, double* fmin);}
-    else if (strcmp(QuelleFonction, "Set_fmin") == 0)
-    {
- 	if (strcasecmp (_algorithm_name, "nlcg") != 0) 
-	    {return_c = "ERROR : Get_fmin is relevant only with vmlmn algorithm";}
-	else 
-	    {local_status_fmin = opk_set_nlcg_fmin(nlcg, double fmin);}
-    else if (strcmp(QuelleFonction, "Unset_fmin") == 0)
-    {
- 	if (strcasecmp (_algorithm_name, "nlcg") != 0) 
-	    {return_c = "ERROR : Get_fmin is relevant only with vmlmn algorithm";}
-	else 
-	    {local_status_fmin = opk_unset_nlcg_fmin(nlcg);}
-    else if (strcmp(QuelleFonction, "Get_description") == 0)
-    {
- 	if (strcasecmp (_algorithm_name, "nlcg") != 0) 
-	    {return_c = "ERROR : Get_fmin is relevant only with vmlmn algorithm";}
-	else 
-	    {local_status_fmin = opk_get_nlcg_description(nlcg, char* str);}
-    
-    if (local_status_fmin == OPK_SUCCESS)
-        {return_c = "OPK_SUCCESS";}   
-    else
-        {return_c = "OPK_FMIN_FAILURE";}
-*/
+   fclose(file);
 
-
-    fclose(fichier);
-// On renvoit la valeur demandee sous forme de chaine de charactere
+    // The value is returned as a char string
     return Py_BuildValue("s",return_c);
 }
 // ------------------------------------------------------------------------------------------ 
@@ -900,10 +1070,9 @@ opk_close(PyObject * self)
     OPK_DROP(_vspace);
 
     // Drop algorithm
-    if (strcasecmp(_algorithm_name, "nlcg") == 0)
-        OPK_DROP(_nlcg);
-    else
-        OPK_DROP(_vmlmb);
+    OPK_DROP(_nlcg);
+    OPK_DROP(_vmlmb);
+    opk_destroy_optimizer(_limited_optimizer);
 
     // Function does not return anything
     Py_RETURN_NONE;

@@ -1,10 +1,13 @@
-# import Kernel_Estimation_v6 as MonImage
-import Mes_Fonctions_v2 as MesFonctions
 from random import random
 import matplotlib.pyplot as pl
 import math
 import numpy as np
 import copy
+from scipy import signal
+
+import Mes_Fonctions_v2 as MesFonctions
+# import Kernel_Estimation_v6 as MonImage
+
 import opkpy_v3
 
 # -----------------------------------------------------------------------------------
@@ -39,8 +42,6 @@ C_noise = np.zeros((size, size))
 for i in range(0, size):
     C_noise[i, i] = noise[i] * noise[i]
 C_noise_inv = np.linalg.inv(C_noise)
-
-
 # -----------------------------------------------------------------------------------
 
 
@@ -76,8 +77,6 @@ def phi(entry):
 
     t_ = likelihood + regularization_im + regularization_PSF
     return t_
-
-
 # -----------------------------------------------------------------------------------
 
 
@@ -93,8 +92,6 @@ def grad(entry):
         Retour[i] = (phi(entry_dt) - phi_originel) / dt
         l += 1
     return Retour
-
-
 # -----------------------------------------------------------------------------------        
 
 
@@ -105,8 +102,6 @@ def fg(x, gx):
     gx[0:size] = legradient[0:size]
     gx[size:2 * size] = legradient[size:2 * size]
     return phi(x)
-
-
 # -----------------------------------------------------------------------------------
 
 
@@ -144,30 +139,31 @@ g = np.array([12, 4], dtype="float64")
 f = fg_Rosen(x, g)
 
 
-#x_out = opkpy_v3.opk_minimize(x, fg_Rosen, g, algorithm="nlcg", linesearch="armijo",
+#x_out = opkpy_v3.opk_minimize(x, fg_Rosen, g, algorithm="nlcg", linesearch="nonmonotone",
 #                      nlcg="FletcherReeves", limited=1, verbose=0)      
-#print"nlcg, quadratic, FletcherReeves :" + str(x_out) + "\n \n"
-#x_out = opkpy_v3.opk_minimize(x, fg_Rosen, g, algorithm="nlcg", linesearch="armijo",
+#print"FletcherReeves :" + str(x_out) + "\n \n"
+#x_out = opkpy_v3.opk_minimize(x, fg_Rosen, g, algorithm="nlcg", linesearch="nonmonotone",
 #                      nlcg="HestenesStiefel", limited=1, verbose=0)      
-#print"nlcg, quadratic, HestenesStiefel :" + str(x_out) + "\n \n"
-#x_out = opkpy_v3.opk_minimize(x, fg_Rosen, g, algorithm="nlcg", linesearch="armijo",
+#print"HestenesStiefel :" + str(x_out) + "\n \n"
+#x_out = opkpy_v3.opk_minimize(x, fg_Rosen, g, algorithm="nlcg", linesearch="nonmonotone",
 #                      nlcg="PolakRibierePolyak", limited=1)      
-#print"nlcg, quadratic, PolakRibierePolyak :" + str(x_out) + "\n \n"
-#x_out = opkpy_v3.opk_minimize(x, fg_Rosen, g, algorithm="nlcg", linesearch="armijo",
+#print"PolakRibierePolyak :" + str(x_out) + "\n \n"
+#x_out = opkpy_v3.opk_minimize(x, fg_Rosen, g, algorithm="nlcg", linesearch="nonmonotone",
 #                      nlcg="Fletcher", limited=1)      
-#print"nlcg, quadratic, Fletcher :" + str(x_out) + "\n \n"
-#x_out = opkpy_v3.opk_minimize(x, fg_Rosen, g, algorithm="nlcg", linesearch="armijo",
+#print"Fletcher :" + str(x_out) + "\n \n"
+#x_out = opkpy_v3.opk_minimize(x, fg_Rosen, g, algorithm="nlcg", linesearch="nonmonotone",
 #                      nlcg="LiuStorey", limited=1)      
-#print"nlcg, quadratic, LiuStorey :" + str(x_out) + "\n \n"
-#x_out = opkpy_v3.opk_minimize(x, fg_Rosen, g, algorithm="nlcg", linesearch="armijo",
+#print"LiuStorey :" + str(x_out) + "\n \n"
+#x_out = opkpy_v3.opk_minimize(x, fg_Rosen, g, algorithm="nlcg", linesearch="nonmonotone",
 #                      nlcg="DaiYuan", limited=1)      
-#print"nlcg, quadratic, DaiYuan :" + str(x_out) + "\n \n"
-#x_out = opkpy_v3.opk_minimize(x, fg_Rosen, g, algorithm="nlcg", linesearch="armijo",
+#print"DaiYuan :" + str(x_out) + "\n \n"
+#x_out = opkpy_v3.opk_minimize(x, fg_Rosen, g, algorithm="nlcg", linesearch="nonmonotone",
 #                      nlcg="PerryShanno", limited=1)      
-#print"nlcg, quadratic, PerryShanno :" + str(x_out) + "\n \n"
-x_out = opkpy_v3.opk_minimize(x, fg_Rosen, g, algorithm="nlcg", linesearch="armijo",
-                      nlcg="HagerZhang", limited=1)      
-print"nlcg, quadratic, HagerZhang :" + str(x_out) + "\n \n"
+#print"PerryShanno :" + str(x_out) + "\n \n"
+
+x_out = opkpy_v3.opk_minimize(x, fg_Rosen, g, algorithm="vmlmb", linesearch="nonmonotone",
+                      nlcg="HagerZhang", limited=0)      
+print"HagerZhang :" + str(x_out) + "\n \n"
 
 ##############################################################################
 
@@ -177,7 +173,8 @@ print"nlcg, quadratic, HagerZhang :" + str(x_out) + "\n \n"
 # x, f, g
 # bl, bu  ---> only for vmlmb
 ###### algorithm
-###### linesearch, autostep
+###### linesearch 
+# autostep
 ###### nlcg    ---> only for nlcg
 ###### vmlmb   ---> only for vmlmb
 # delta, epsilon
@@ -246,59 +243,55 @@ print"nlcg, quadratic, HagerZhang :" + str(x_out) + "\n \n"
                               --> limited    CONVERGE
      --> cubic
                --> FletcherReeves 
-                              --> nonlimited
-                              --> limited
+                              --> nonlimited CONVERGE
+                              --> limited    CONVERGE   
                --> HestenesStiefel
-                              --> nonlimited
-                              --> limited             
+                              --> nonlimited CONVERGE
+                              --> limited    CONVERGE                
                --> PolakRibierePolyak
-                              --> nonlimited
-                              --> limited             
+                              --> nonlimited CONVERGE
+                              --> limited    CONVERGE                
                --> Fletcher
-                              --> nonlimited
-                              --> limited             
+                              --> nonlimited CONVERGE
+                              --> limited    CONVERGE                
                --> LiuStorey
-                              --> nonlimited
-                              --> limited             
+                              --> nonlimited CONVERGE
+                              --> limited    CONVERGE                
                --> DaiYuan 
-                              --> nonlimited
-                              --> limited             
+                              --> nonlimited CONVERGE
+                              --> limited    CONVERGE                
                --> PerryShanno
-                              --> nonlimited
-                              --> limited             
+                              --> nonlimited CONVERGE
+                              --> limited    CONVERGE                
                --> HagerZhang 
-                              --> nonlimited
-                              --> limited 
+                              --> nonlimited CONVERGE
+                              --> limited    CONVERGE    
      --> nonmonotone
                --> FletcherReeves 
-                              --> nonlimited
-                              --> limited
+                              --> nonlimited CONVERGE
+                              --> limited    CONVERGE   
                --> HestenesStiefel
-                              --> nonlimited
-                              --> limited             
+                              --> nonlimited OK
+                              --> limited    CONVERGE                
                --> PolakRibierePolyak
-                              --> nonlimited
-                              --> limited             
+                              --> nonlimited OK
+                              --> limited    OK           
                --> Fletcher
-                              --> nonlimited
-                              --> limited             
+                              --> nonlimited CONVERGE
+                              --> limited    CONVERGE                
                --> LiuStorey
-                              --> nonlimited
-                              --> limited             
+                              --> nonlimited OK
+                              --> limited    OK           
                --> DaiYuan 
-                              --> nonlimited
-                              --> limited             
+                              --> nonlimited CONVERGE
+                              --> limited    CONVERGE                
                --> PerryShanno
-                              --> nonlimited
-                              --> limited             
+                              --> nonlimited CONVERGE
+                              --> limited    CONVERGE                
                --> HagerZhang 
-                              --> nonlimited
-                              --> limited                 
+                              --> nonlimited CONVERGE
+                              --> limited    CONVERGE              
 """
- 
- 
- 
-
 ##############################################################################
 
 
