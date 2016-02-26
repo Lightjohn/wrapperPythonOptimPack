@@ -326,7 +326,7 @@ def opk_minimize(x_in, fg, g, bl=NULL, bu=NULL, algorithm="nlcg", linesearch="qu
         # Comment and iterate
         if verbose != NULL:
             print "-----------  iteration n",iteration, ", evaluation n", evaluation, "  -----------"
-            print "f(x) = ", fx
+        print "f(x) = ", fx
             #print "x = ", x                
         task = opkc_v3.opk_iteration(x, fx, g)              
                               
@@ -355,44 +355,44 @@ def opk_minimize(x_in, fg, g, bl=NULL, bu=NULL, algorithm="nlcg", linesearch="qu
         print"ERROR : Unknown problem has occured"
         print "reason = ",opkc_v3.opk_taskInfo("get_reason")   
     # Destruction of the optimizer 
-
-    info = opkc_v3.opk_taskInfo("get_method")    
-    print "method = ",info
-    info = opkc_v3.opk_taskInfo("get_size")    
-    print "size = ",info
-    info = opkc_v3.opk_taskInfo("get_type")    
-    print "type = ",info   
-    info = opkc_v3.opk_taskInfo("get_task")    
-    print "tast = ",info   
-    info = opkc_v3.opk_taskInfo("get_status")    
-    print "status = ",info   
-    info = opkc_v3.opk_taskInfo("get_iterations")    
-    print "iteration = ",info, iteration
-    info = opkc_v3.opk_taskInfo("get_evaluations")    
-    print "evaluation = ",info, evaluation
-    info = opkc_v3.opk_taskInfo("get_restarts")    
-    print "restarts = ",info
-    info = opkc_v3.opk_taskInfo("get_reason")    
-    print "reason = ",info
-    info = opkc_v3.opk_taskInfo("get_step")    
-    print "step = ",info
-    info = opkc_v3.opk_taskInfo("get_gnorm")    
-    print "gnorm = ",info
-    info = opkc_v3.opk_taskInfo("get_description")    
-    print "description = ",info
-    info = opkc_v3.opk_taskInfo("get_options")    
-    print "options = ",info
-    info = opkc_v3.opk_taskInfo("get_beta")    
-    print "beta = ",info    
-    info = opkc_v3.opk_taskInfo("get_fmin")    
-    print "fmin = ",info    
-    info = opkc_v3.opk_taskInfo("get_mp")    
-    print "mp = ",info    
-    info = opkc_v3.opk_taskInfo("get_s", 1)    
-    print "s = ",info 
-    info = opkc_v3.opk_taskInfo("get_y", 1)    
-    print "y = ",info 
-      
+    if verbose != NULL:
+        info = opkc_v3.opk_taskInfo("get_method")    
+        print "method = ",info
+        info = opkc_v3.opk_taskInfo("get_size")    
+        print "size = ",info
+        info = opkc_v3.opk_taskInfo("get_type")    
+        print "type = ",info   
+        info = opkc_v3.opk_taskInfo("get_task")    
+        print "tast = ",info   
+        info = opkc_v3.opk_taskInfo("get_status")    
+        print "status = ",info   
+        info = opkc_v3.opk_taskInfo("get_iterations")    
+        print "iteration = ",info, iteration
+        info = opkc_v3.opk_taskInfo("get_evaluations")    
+        print "evaluation = ",info, evaluation
+        info = opkc_v3.opk_taskInfo("get_restarts")    
+        print "restarts = ",info
+        info = opkc_v3.opk_taskInfo("get_reason")    
+        print "reason = ",info
+        info = opkc_v3.opk_taskInfo("get_step")    
+        print "step = ",info
+        info = opkc_v3.opk_taskInfo("get_gnorm")    
+        print "gnorm = ",info
+        info = opkc_v3.opk_taskInfo("get_description")    
+        print "description = ",info
+        info = opkc_v3.opk_taskInfo("get_options")    
+        print "options = ",info
+        info = opkc_v3.opk_taskInfo("get_beta")    
+        print "beta = ",info    
+        info = opkc_v3.opk_taskInfo("get_fmin")    
+        print "fmin = ",info    
+        info = opkc_v3.opk_taskInfo("get_mp")    
+        print "mp = ",info    
+        info = opkc_v3.opk_taskInfo("get_s", 1)    
+        print "s = ",info 
+        info = opkc_v3.opk_taskInfo("get_y", 1)    
+        print "y = ",info 
+     
     x_out = x.copy()    
     opkc_v3.opk_close()   
 
