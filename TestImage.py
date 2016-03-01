@@ -1,180 +1,201 @@
 from random import random
-import matplotlib.pyplot as pl
+from matplotlib.pyplot import *
 import math
-import numpy as np
 import copy
+import numpy as np
 from scipy import signal
+from PIL import Image
 
 import opkpy_v3
 
 
-# -----------------------------------------------------------------------------------  
-ImageImportee = "essaie"  # "test", "chat", etc
-# -----------------------------------------------------------------------------------
+
+# ----------------------------------------------------------------------------
+psf_init = "blind"
+ImageImportee = "essaie"  # "essaie", test", "thiebaut", etc
+# ----------------------------------------------------------------------------
 
 
-# -----------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 if ImageImportee == "essaie":
     # On essaye avec une petite image
-    NbLigne = NbColonne = 9
+    a = b = 9
     # IMAGE NETTE
-    image_vraie = np.zeros((NbLigne, NbColonne))
-    image_vraie[2, 2] = image_vraie[6, 2] = 255
-    image_vraie[2, 6] = image_vraie[6, 6] = 255
-    # KERNEL QUI LA FLOUTE
-    kernel_vrai = np.zeros((NbLigne, NbColonne))
-    kernel_vrai[4, 4] = 255
-    kernel_vrai[5, 4] = 200
-    kernel_vrai[6, 4] = 70
-    kernel_vrai[6, 5] = 150
-    kernel_vrai_norm = kernel_vrai/sum(sum(kernel_vrai))
-    # RESULTAT : L'IMAGE FLOUTEE
-    floue = signal.fftconvolve(image_vraie, kernel_vrai_norm, mode="same")
-    floue = np.around(floue, decimals=10)
-    # KERNEL QUELCONQUE, POINT DE DEPART
-    kernel = np.zeros((NbLigne, NbColonne))
-    kernel[5, 4] = kernel[4, 5] = kernel[5, 6] = kernel[6, 5] = 100
-    kernel[4, 4] = kernel[4, 6] = kernel[6, 4] = kernel[6, 6] = 20
-    kernel[5, 5] = 255
-    # IMAGE QUELCONQUE, POINT DE DEPART
-    latente = np.zeros((NbLigne, NbColonne))
-    latente[3,4] = latente[6,2] = 250
-# else :
-    # On importe une vraie image
-#    NbLigne, NbColonne, image_vraie, kernel_vrai, floue, kernel, inutile = MonImage.Ouverture("ImageImportee")
-# -----------------------------------------------------------------------------------  
+    objet_mat = np.zeros((a, b))
+    objet_mat[2, 2] = objet_mat[6, 2] = 255
+    objet_mat[2, 6] = objet_mat[6, 6] = 255
+    # psf QUI LA FLOUTE
+    kernel_mat = np.zeros((a, b))
+    kernel_mat[4, 4] = 255
+    kernel_mat[5, 4] = 200
+    kernel_mat[6, 4] = 70
+    kernel_mat[6, 5] = 150
+    kernel_mat = kernel_mat/sum(sum(kernel_mat))
 
+else :
+    ############### On ouvre l'objet #################
+    fichier = "/obs/gheurtier/Defloutage/Images/" + ImageImportee + "_nette.png"
+    im = Image.open(fichier, "r")
+    image_liste = list(im.getdata())     
+    a,b = im.size  
+    objet_mat = np.zeros((b,a))
+    for i in range(0, a*b):
+        objet_mat[np.floor(i/a), i%a] = image_liste[i][0]
+      
+    ################# On ouvre la psf ################
+    fichier = "/obs/gheurtier/Defloutage/Images/" + ImageImportee + "_ker.png"
+    ke = Image.open(fichier, "r")       
+    kernel_liste = list(ke.getdata())     
+    c,d = ke.size  
+    kernel_mat = np.zeros((b,a))
+    for i in range(0, c*d):
+        kernel_mat[np.floor(i/c), i%c] = kernel_liste[i][0]
+    kernel_mean =  np.mean(kernel_mat)
+    kernel_mat[kernel_mat < 3*kernel_mean] = 0
+    kernel_mat = kernel_mat/sum(sum(kernel_mat))
 
-# -----------------------------------------------------------------------------------    
-# On declare certains parametres
+############# On definit les tailles ##############
+dt = np.array([10,0], dtype="double")
+NbLigne = b
+NbColonne = a
 size = NbLigne * NbColonne
-dt = 1
-# On fait les conversions en vecteur    
-latente_v = latente.reshape(size)
-floue_v = floue.reshape(size)
-kernel_v = kernel.reshape(size)
-# On cree la matrice bruit
-noise = np.asarray([np.around(random(), decimals=5) for i in range(size)])
+if (NbLigne != NbColonne):
+    print" WARNING: Object must be square"
+    
+###### On definit le bruit et sa variance #########
+noise = np.asarray([np.around(random(), decimals=8) for i in range(size)])
+noise_mat = noise.reshape((NbLigne, NbColonne))
 C_noise = np.zeros((size, size))
-for i in range(0, size):
-    C_noise[i, i] = noise[i] * noise[i]
-C_noise_inv = np.linalg.inv(C_noise) / 1000
-# -----------------------------------------------------------------------------------
+#for i in range(0, size):
+#    C_noise[i, i] = noise[i] * noise[i]
+#C_noise_inv = np.linalg.inv(C_noise) / 1000
+variance = 0
+noise_mean = np.mean(noise)
+for i in range (0,size):
+    variance = variance + (noise[i] - noise_mean) * (noise[i] - noise_mean)
+variance =  variance / size
 
+############# On definit les vecteurs #############
+objet = objet_mat.reshape(size)
+kernel = kernel_mat.reshape(size)
+ft_objet = np.fft.fft(objet)
+ft_kernel = np.fft.fft(np.roll(kernel,np.round((size+1)/2)))
+image = np.real(np.fft.ifft(ft_objet * ft_kernel)) 
+image[image < 1e-12] = 0
+ft_image = np.fft.fft(image)
+image_mat = image.reshape((NbLigne,NbColonne))
 
-# -----------------------------------------------------------------------------------
-# La fonction que l'on souhaite optimiser
-def phi(entry):
-    # Likelihood fonction
-    kernel_norm = entry[size:2*size] / sum(entry[size:2*size])
-    HO2 = signal.fftconvolve(entry[0:size], kernel_norm, mode="same")
-    HO2 = np.around(HO2, decimals=10)
-    x_ = (floue_v - HO2)
-    likelihood = np.dot(np.dot(x_, C_noise_inv), x_.transpose())
-    # Regularization term
-    image_ = entry[0:size]  # /sum(sum(im))
-    PSF_ = entry[size:2 * size]  # /sum(sum(PSF))
-    y_ = sum(image_ * image_)
-    regularization_im = math.sqrt(y_)
-    z_ = sum(PSF_ * PSF_)
-    regularization_PSF = math.sqrt(z_)
+################# On definit psf ##################
+image_mean = np.mean(image)
+psf = np.zeros(size)
+if psf_init == "carre":
+    psf[49] = psf[41] = psf[51] = psf[59] = 100
+    psf[40] = psf[42] = psf[58] = psf[60] = 20
+    psf[50] = 255
+elif psf_init == "blind":
+    psf[0:size] = image[0:size]    
+    psf[psf < 2*image_mean] = 0
+else:
+    psf[0:size] = kernel[0:size]
+#psf = psf / sum(psf)
+psf_mat = psf.reshape((NbLigne,NbColonne))
 
-    t_ = likelihood + regularization_im + regularization_PSF
-    RETOUR = sum(x_ * x_) 
-    return RETOUR
-# -----------------------------------------------------------------------------------
+################# On affiche ######################
+#matshow(objet_mat,cmap=cm.gray)
+#matshow(kernel_mat,cmap=cm.gray)
+#matshow(image_mat,cmap=cm.gray)
+#matshow(psf_mat,cmap=cm.gray)
 
+############## On definit les noms ################
+"""
+--> objet = l'objet de base, on ne l'utilise pas
+--> kernel = le kernel de base, on ne l'utilise pas, sauf si set blind = False.
+dans ce cas kernel = psf
+--> image = le resultat de la convolution d'objet et image kernel (avec kernel
+recentre). On s'en sert comme objet au debut de l'algorithme et pour estimer
+la valeur initiale de psf
+--> psf = la psf qui varie dans l'ago. Si blind = True, psf est initialise
+en filtrant les basses frequences d'image.
+"""
+# ----------------------------------------------------------------------------
+  
 
-# -----------------------------------------------------------------------------------
-# On cree le gradient, un vecteur de taille "NombreDeParametres
-def grad(entry):
+  
+# ----------------------------------------------------------------------------
+def phi(x):
+
+    ft_obj = np.fft.fft(x[0:size])
+    psf_norm = x[size:2*size] / sum(x[size:2*size])  
+    ft_psf = np.fft.fft(np.roll(psf_norm,np.round((size+1)/2))) 
+    
+    HO = np.real(np.fft.ifft(ft_psf*ft_obj))
+    HO = np.around(HO, decimals=10)
+    HOminusI = (HO - image)
+    
+    return sum(HOminusI * HOminusI)
+   
+def grad_damien(entry):
+    Retour = np.zeros(2 * size)
+    ft_obj = np.fft.fft(x[0:size])
+    psf_norm = x[size:2*size] / sum(x[size:2*size])  
+    ft_psf = np.fft.fft(np.roll(psf_norm,np.round((size+1)/2)))  
+    HO = np.real(np.fft.ifft(ft_psf*ft_obj))
+    HO = np.around(HO, decimals=10)
+    HOminusI = (HO - image)
+    
+    ft_HOminusI_norm =   np.roll(np.fft.fft(HOminusI/sum(HOminusI)),(size+1)/2)
+    Retour[size:2 * size] = np.real(np.fft.ifft(np.conjugate(ft_obj)*ft_HOminusI_norm))
+    Retour[0:size] = np.real(np.fft.ifft(np.conjugate(ft_psf)*ft_HOminusI_norm))
+    return Retour   
+   
+def grad_dt(entry):
+    dt[0] = dt[0]*0.99
     Retour = np.zeros(2 * size)
     phi_originel = phi(entry)
     for i in range(0, 2 * size):
         entry_dt = copy.deepcopy(entry)
-        entry_dt[i] = entry[i] + dt
-        Retour[i] = (phi(entry_dt) - phi_originel) / dt
+        entry_dt[i] = entry[i] + dt[0]
+        Retour[i] = (phi(entry_dt) - phi_originel) / dt[0]
     return Retour
-# -----------------------------------------------------------------------------------        
-
-
-# -----------------------------------------------------------------------------------
-# On cree le gradient, un vecteur de taille "NombreDeParametres
-def grad_filtre(entry):
-    Retour = np.zeros(2 * size)
-    fx = np.array([-1, 0, 1])/2
-    fy = np.transpose(fx)
-    im_convol_x = signal.convolve(entry[0:size], fx, mode = 'same')
-    im_convol_y = signal.convolve(entry[0:size], fy, mode = 'same')
-    grad_im = np.sqrt(im_convol_x**2 + im_convol_y**2) 
-    ker_convol_x = signal.convolve(entry[size:2*size], fx, mode = 'same')
-    ker_convol_y = signal.convolve(entry[size:2*size], fy, mode = 'same')
-    grad_ker = np.sqrt(ker_convol_x**2 + ker_convol_y**2) 
     
-    Retour = np.concatenate((grad_im, grad_ker), axis=0)        
-    return Retour
-# ----------------------------------------------------------------------------------- 
-    
-
-# -----------------------------------------------------------------------------------
-# On cree le gradient, un vecteur de taille "NombreDeParametres
-def grad_dams(entry):
-    
-    ft_obj = np.fft.fft(entry[0:size])
-    kernel_norm = entry[size:2*size] / sum(entry[size:2*size])  
-    ft_psf = np.fft.fft(kernel_norm) 
-    
-    HO = np.real(np.fft.ifft(ft_psf*ft_obj))
-    HO = np.around(HO, decimals=10)
-    HO2 = signal.fftconvolve(entry[0:size], kernel_norm, mode="same")
-    HO2 = np.around(HO2, decimals=10)
-    
-    HOminusI = (floue_v - HO2)
-    ft_HOminusI_norm =   np.fft.fft(HOminusI/sum(HOminusI))
-
-    grad_ker = np.real(np.fft.ifft(np.conjugate(ft_obj)*ft_HOminusI_norm))
-    grad_im = np.real(np.fft.ifft(np.conjugate(ft_psf)*ft_HOminusI_norm))
-    
-    Retour = np.concatenate((grad_im, grad_ker), axis=0)
-    return Retour
-# ----------------------------------------------------------------------------------- 
-    
-
-# ----------------------------------------------------------------------------------- 
-# Calcul le gradient et retourne la valeur de la fonction au point x
 def fg(x, gx):
-    legradient = grad(x)
+    legradient = grad_dt(x)
     gx[0:size] = legradient[0:size]
     gx[size:2 * size] = legradient[size:2 * size]
-    return phi(x)
-# -----------------------------------------------------------------------------------
-
-
-
-######################### FONCTION DE DEFLOUTAGE D'IMAGE #########################
+    return phi(x)    
+    
+###################### FONCTION DE DEFLOUTAGE D'IMAGE ########################
 
 # On definit notre premier point x (ici l'image floue et un kernel quelconque)
-x = np.concatenate((latente_v, kernel_v), axis=0)
+x = np.concatenate((image, psf), axis=0)
 g = np.zeros(2*size)
 f = np.array([fg(x,g)], dtype="double")
-
+print "f initial = ", f
 # On execute la fonction de minimisation
-pl.matshow(x[0:size].reshape((NbLigne,NbColonne)),cmap=pl.cm.gray)
-pl.matshow(x[size:2*size].reshape((NbLigne,NbColonne)),cmap=pl.cm.gray)
 x_out = opkpy_v3.opk_minimize(x, fg, g, algorithm="vmlmb", 
                               linesearch="cubic", vmlmb="lbfgs",
-                              limited=0, maxeval=None, maxiter = None, verbose=0)  
-                              
-image_defloute = x_out[0:size].reshape((NbLigne,NbColonne))
+                              limited=0, maxeval=200, maxiter = 200)  
+                            
+                            
+objet_defloute = x_out[0:size].reshape((NbLigne,NbColonne))
 kernel_defloute = x_out[size:2*size].reshape((NbLigne,NbColonne))
-test_floue = signal.fftconvolve(image_defloute.reshape(size), kernel_defloute.reshape(size)/sum(sum(kernel_defloute)), mode="same").reshape((NbLigne,NbColonne))
-  
-  
-pl.matshow(image_defloute,cmap=pl.cm.gray)
-pl.matshow(kernel_defloute,cmap=pl.cm.gray)
-pl.matshow(test_floue,cmap=pl.cm.gray)
-pl.matshow(test_floue-floue,cmap=pl.cm.gray)
-print "floue : ", sum(sum(abs(test_floue-floue)))/size
-print "image : ", sum(sum(abs(image_defloute-image_vraie)))/size
-print "kernel : ", sum(sum(abs(kernel_defloute-kernel_vrai)))/size
-#################################################################################
+image_out = np.real(np.fft.ifft(np.fft.fft(x_out[0:size]) * np.fft.fft(np.roll(x_out[size:2*size]/sum(x_out[size:2*size]),np.round((size+1)/2))))).reshape((NbLigne,NbColonne)) 
+
+# objets
+matshow(image_mat,cmap=cm.gray)          # point de depart
+matshow(objet_mat,cmap=cm.gray)          # objectif
+matshow(objet_defloute,cmap=cm.gray)     # resultat
+# psf
+matshow(psf_mat,cmap=cm.gray)
+matshow(kernel_mat,cmap=cm.gray)
+matshow(kernel_defloute,cmap=cm.gray)
+# image
+matshow(image_mat,cmap=cm.gray)
+matshow(image_out,cmap=cm.gray)
+print "objet : ", sum(sum(abs(objet_defloute-objet_mat)))/size
+print "psf : ", sum(sum(abs(kernel_defloute-kernel_mat)))/size
+print "image : ", sum(sum(abs(image_out-image_mat)))/size
+################################################################################
+ 
+    
+    
