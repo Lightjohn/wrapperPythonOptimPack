@@ -17,3 +17,10 @@ optimpack = Extension("opkc_v3", sources=["opkc_v3.c"], libraries=["opk"], libra
 # The setup     ------------------------------
 setup(name="OptimPack", version="1.0", description="Python Package of OptimPack", author="Eric Thiebaut",
       include_dirs=[np.get_include()], ext_modules=[optimpack])
+
+
+optimpack3_1 = Extension("opkc_v3_1", sources=["opkc_v3.1.c"], libraries=["opk"])
+
+# The setup     ------------------------------
+setup(name="OptimPack3_1", version="1.1", description="Python Package of OptimPack", author="Eric Thiebaut",
+      include_dirs=[np.get_include()], ext_modules=[optimpack3_1])
