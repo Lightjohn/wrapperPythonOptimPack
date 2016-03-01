@@ -10,7 +10,7 @@ opk3:
 	python3 setup.py build_ext --inplace
 # Delete all the transitional files
 clean:
-	rm *.o
+	rm *.so
 
 # Delete all that can be regenerated and allow a complete reconstruction of the project
 # mrproper: clean
