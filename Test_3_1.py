@@ -21,10 +21,12 @@ def fg_rosen(x, gx):
 
 if __name__ == "__main__":
     opt = opkpy_v3_1.Optimizer()
-    x = np.array([-1.2, 1.0], dtype="float32")
-    g = np.array([1, 2], dtype="float32")
+    bu= np.array([0.2, 0.1, -0.1, 1.2, 1.3], dtype="float32")
+    x = np.array([-1.2, 1.0, 2.5, 3.6, 1.4], dtype="float32")
+    g = np.array([1, 2, 3 , 2 , 1], dtype="float32")
     f = fg_rosen(x, g)
 
-    print("INPUT:" + str(x))
-    opt.minimize(x, fg_rosen, g, maxiter=5, maxeval=20, verbose=True, bl=1.0)
+    print("INPUT:" + str(x), str(x.dtype))
+    opt.minimize(x, fg_rosen, g, maxiter=5, maxeval=20, verbose=True, bl=bu)
     print("OUTPUT:" + str(x))
+
