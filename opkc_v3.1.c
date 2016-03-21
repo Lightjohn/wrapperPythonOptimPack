@@ -86,11 +86,11 @@ initialisation(PyObject * self, PyObject * args, PyObject * keywds)
     if (bound_up_obj == NULL || bound_up_obj == Py_None) {
         bound_up = OPK_BOUND_NONE;
     } else if (PyFloat_Check(bound_up_obj) || PyLong_Check(bound_up_obj)) {
-        bound_up = OPK_BOUND_SCALAR;
+        bound_up = (single ? OPK_BOUND_SCALAR_FLOAT : OPK_BOUND_SCALAR_DOUBLE);
         double tmp_up = PyFloat_AsDouble(bound_up_obj);
         bound_up_arr = (void *) &tmp_up;        // Should work in float and double case ....
     } else if (PyArray_Check(bound_up_obj)) {
-        bound_up = OPK_BOUND_VECTOR;
+        bound_up = (single ? OPK_BOUND_STATIC_FLOAT : OPK_BOUND_STATIC_DOUBLE);
         PyArrayObject *bound_up_arr_tmp;
         bound_up_arr_tmp =
             (PyArrayObject *) PyArray_FROM_OT(bound_up_obj,
@@ -109,11 +109,11 @@ initialisation(PyObject * self, PyObject * args, PyObject * keywds)
     if (bound_low_obj == NULL || bound_low_obj == Py_None) {
         bound_low = OPK_BOUND_NONE;
     } else if (PyFloat_Check(bound_low_obj) || PyLong_Check(bound_low_obj)) {
-        bound_low = OPK_BOUND_SCALAR;
+        bound_low = (single ? OPK_BOUND_STATIC_FLOAT : OPK_BOUND_SCALAR_DOUBLE);
         double tmp_low = PyFloat_AsDouble(bound_low_obj);
         bound_low_arr = (void *) &tmp_low;      // Should work in float and double case ....
     } else if (PyArray_Check(bound_low_obj)) {
-        bound_low = OPK_BOUND_VECTOR;
+        bound_low = (single ? OPK_BOUND_STATIC_FLOAT : OPK_BOUND_STATIC_DOUBLE);
         PyArrayObject *bound_low_arr_tmp;
         bound_low_arr_tmp =
             (PyArrayObject *) PyArray_FROM_OT(bound_up_obj,
@@ -128,14 +128,14 @@ initialisation(PyObject * self, PyObject * args, PyObject * keywds)
         PyErr_SetString(PyExc_TypeError, "Unknown lower bound type");
         return NULL;
     }
-    opk_optimizer_t *opt = opk_new_optimizer(algorithm_method, type, n, 0, 0,
+    opk_optimizer_t *opt = opk_new_optimizer(algorithm_method, NULL, type, n,
                                              bound_low, bound_low_arr,
                                              bound_up, bound_up_arr, NULL);
     if (opt == NULL) {
         PyErr_SetString(PyExc_TypeError, "Failed to create optimizer");
         return NULL;
     }
-    opk_task_t task = opk_start(opt, type, n, x);
+    opk_task_t task = opk_start(opt, x);
     // We store in the python object the optimizer
     PyObject *c_api_object =
         PyCapsule_New((void *) opt, "opkc_v3_1._optimizer", NULL);
@@ -210,7 +210,7 @@ iterate(PyObject * self, PyObject * args)
         PyErr_SetString(PyExc_TypeError, "Failed to import optimizer");
         return NULL;
     }
-    opk_task_t task = opk_iterate(opt, type, n, x, fx, g);;
+    opk_task_t task = opk_iterate(opt, x, fx, g);;
     return Py_BuildValue("i", task);
 }
 

@@ -43,10 +43,13 @@ class Optimizer:
     OPK_TASKS = {-1: "OPK_TASK_ERROR", 0: "OPK_TASK_START", 1: "OPK_TASK_COMPUTE_FG", 2: "OPK_TASK_NEW_X",
                  3: "OPK_TASK_FINAL_X", 4: "OPK_TASK_WARNING"}
 
+    def __init__(self):
+        self.iteration = 0
+        self.evaluation = 0
+
     def minimize(self, x, fg, g, bl=None, bu=None, algorithm="vmlmb", maxiter=500, maxeval=500, verbose=False):
         # Initialisation of the algorithm
-        iteration = 0
-        evaluation = 0
+
         task = self.OPK_TASK_START
         error = False
         bound_given = 0
@@ -62,16 +65,16 @@ class Optimizer:
                 # Caller must compute f(x) and g(x).
             elif task == self.OPK_TASK_COMPUTE_FG:
                 fx = fg(x, g)  # Compute f and g
-                evaluation += 1  # Increase evaluation
+                self.evaluation += 1  # Increase evaluation
                 task = opkc_v3_1.iterate(x, fx, g)  # Iterate
                 # A new iterate is available
             elif task == self.OPK_TASK_NEW_X:
-                iteration += 1  # Increase iteration
+                self.iteration += 1  # Increase iteration
                 task = opkc_v3_1.iterate(x, fx, g)  # Iterate
                 # Algorithm has converged, solution is available
             elif task == self.OPK_TASK_FINAL_X:
                 print("Algorithm has converged, solution is available")
-                print("iteration = ", iteration, "     evaluation = ", evaluation)
+                print("iteration = ", self.iteration, "     evaluation = ", self.evaluation)
                 break
                 # Algorithm terminated with a warning
             elif task == self.OPK_TASK_WARNING:
@@ -89,17 +92,18 @@ class Optimizer:
             if error:
                 break
                 # Too much iterations, check OPK_TASK_NEW_X
-            if iteration >= maxiter:
+            if self.iteration >= maxiter:
                 print("Too much iteration\n")
-                print("iteration = ", iteration, "     evaluation = ", evaluation)
+                print("iteration = ", self.iteration, "     evaluation = ", self.evaluation)
                 break
                 # Too much evaluation of f and g, check OPK_TASK_COMPUTE_FG
-            if evaluation >= maxeval:
+            if self.evaluation >= maxeval:
                 print("Too much evaluation\n")
-                print("iteration = ", iteration, "     evaluation = ", evaluation)
+                print("iteration = ", self.iteration, "     evaluation = ", self.evaluation)
                 break
             if fx and verbose:
                 print(" f(x) = ", fx)
+        print("PY counter:", opkc_v3_1.counter," Single:", opkc_v3_1.single)
         return x
 
 
