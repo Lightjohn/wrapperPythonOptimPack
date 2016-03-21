@@ -200,9 +200,9 @@ iterate(PyObject * self, PyObject * args)
     if (x == NULL || g == NULL) {
         return NULL;
     }
-    npy_intp *shape = PyArray_DIMS(x_arr);
-    int n = shape[0];
-    int type = (single ? OPK_FLOAT : OPK_DOUBLE);
+    // npy_intp *shape = PyArray_DIMS(x_arr);
+    // int n = shape[0];
+    // int type = (single ? OPK_FLOAT : OPK_DOUBLE);
     // Getting the optimizer stored in the python object
     opk_optimizer_t *opt =
         (opk_optimizer_t *) PyCapsule_Import("opkc_v3_1._optimizer", 0);
@@ -263,22 +263,24 @@ static PyMethodDef Methods[] = {
     {NULL, NULL, 0, NULL}
 };
 
-// module initialization
-static struct PyModuleDef optimpack_module =
-    { PyModuleDef_HEAD_INIT, "opkc_v3_1", NULL, -1, Methods };
+
 
 #if PY_MAJOR_VERSION >= 3   // Python 3+
-PyMODINIT_FUNC
-PyInit_opkc_v3_1(void)
-{
-    import_array();
-    return PyModule_Create(&optimpack_module);
-}
+    // module initialization
+    static struct PyModuleDef optimpack_module =
+        { PyModuleDef_HEAD_INIT, "opkc_v3_1", NULL, -1, Methods };
+
+    PyMODINIT_FUNC
+    PyInit_opkc_v3_1(void)
+    {
+        import_array();
+        return PyModule_Create(&optimpack_module);
+    }
 #else                       // PYTHON2
-PyMODINIT_FUNC
-initopkc_v3_1(void)
-{
-    (void) Py_InitModule("opkc_v3_1", Methods);
-    import_array();
-}
+    PyMODINIT_FUNC
+    initopkc_v3_1(void)
+    {
+        (void) Py_InitModule("opkc_v3_1", Methods);
+        import_array();
+    }
 #endif
