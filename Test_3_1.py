@@ -1,7 +1,6 @@
 # import Kernel_Estimation_v6 as MonImage
 import Mes_Fonctions_v2 as MesFonctions
 from random import random
-import matplotlib.pyplot as pl
 import math
 import numpy as np
 import copy

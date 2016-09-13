@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 from PIL.Image import *
-from pylab import *
 from random import gauss
 import matplotlib
 import math
