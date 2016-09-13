@@ -73,7 +73,7 @@ variance = 0
 noise_mean = np.mean(noise)
 for i in range (0,size):
     variance = variance + (noise[i] - noise_mean) * (noise[i] - noise_mean)
-variance =  variance / size
+variance /= size
 
 ############# On definit les vecteurs #############
 objet = objet_mat.reshape(size)
@@ -149,7 +149,7 @@ def grad_damien(entry):
     return Retour   
    
 def grad_dt(entry):
-    dt[0] = dt[0]*0.99
+    dt[0] *= 0.99
     Retour = np.zeros(2 * size)
     phi_originel = phi(entry)
     for i in range(0, 2 * size):

@@ -12,11 +12,11 @@ import numpy as np
 
 
 # An other...   ------------------------------
-optimpack = Extension("opkc_v3", sources=["opkc_v3.c"], libraries=["opk"], library_dirs=["/obs/gheurtier/lib"])
+#optimpack = Extension("opkc_v3", sources=["opkc_v3.c"], libraries=["opk"], library_dirs=["/obs/gheurtier/lib"])
 
 # The setup     ------------------------------
-setup(name="OptimPack", version="1.0", description="Python Package of OptimPack", author="Eric Thiebaut",
-      include_dirs=[np.get_include()], ext_modules=[optimpack])
+#setup(name="OptimPack", version="1.0", description="Python Package of OptimPack", author="Eric Thiebaut",
+#      include_dirs=[np.get_include()], ext_modules=[optimpack])
 
 
 optimpack3_1 = Extension("opkc_v3_1", sources=["opkc_v3.1.c"], libraries=["opk"])

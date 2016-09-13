@@ -1,5 +1,5 @@
 # Gathering of all the executable to be made
-all: opk
+all: opk3
 
 # Creation of the executable, all objects that are meant to be created or used are written
 opk:

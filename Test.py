@@ -163,7 +163,7 @@ f = fg_Rosen(x, g)
 
 x_out = opkpy_v3.opk_minimize(x, fg_Rosen, g, algorithm="vmlmb", linesearch="nonmonotone",
                       nlcg="HagerZhang", limited=0)      
-print"HagerZhang :" + str(x_out) + "\n \n"
+print("HagerZhang :" + str(x_out) + "\n \n")
 
 ##############################################################################
 
