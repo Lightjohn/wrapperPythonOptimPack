@@ -10,6 +10,17 @@
 #define TRUE  1
 #define FALSE 0
 
+// Destructor for cleaning up Point objects
+void destructor_opk(PyObject * obj) {
+    opk_optimizer_t *opt =
+        (opk_optimizer_t *) PyCapsule_GetPointer(obj, "opkc_v3_1._optimizer");
+    if (opt != NULL) {
+        opk_destroy_optimizer(opt);
+    }
+    PyErr_Print();
+}
+
+
 static PyObject *
 initialisation(PyObject * self, PyObject * args, PyObject * keywds)
 {
@@ -138,7 +149,7 @@ initialisation(PyObject * self, PyObject * args, PyObject * keywds)
     opk_task_t task = opk_start(opt, x);
     // We store in the python object the optimizer
     PyObject *c_api_object =
-        PyCapsule_New((void *) opt, "opkc_v3_1._optimizer", NULL);
+        PyCapsule_New((void *) opt, "opkc_v3_1._optimizer", destructor_opk);
     // and add it to the module
     int err = PyModule_AddObject(self, "_optimizer", c_api_object);
     err += PyModule_AddObject(self, "single", Py_BuildValue("i", single));
@@ -217,11 +228,13 @@ iterate(PyObject * self, PyObject * args)
 static PyObject *
 opk_close(PyObject * self)
 {
+
     opk_optimizer_t *opt =
         (opk_optimizer_t *) PyCapsule_Import("opkc_v3_1._optimizer", 0);
     if (opt != NULL) {
         opk_destroy_optimizer(opt);
     }
+    PyErr_Print();
     Py_RETURN_NONE;
 }
 

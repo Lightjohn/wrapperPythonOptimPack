@@ -103,9 +103,16 @@ class Optimizer:
                 break
             if fx and verbose:
                 print(" f(x) = ", fx)
-        print("PY counter:", opkc_v3_1.counter," Single:", opkc_v3_1.single)
+        print("PY counter:", opkc_v3_1.counter," Single:", opkc_v3_1.single, opkc_v3_1.get_gnorm())
+        # self.close()
         return x
 
 
-    def __del__(self):
+    # No need fo close or __del__ ^^ look for destructor_opk in c code.
+    def close(self):    # if done in __del__ the capsule was already liberated 
         opkc_v3_1.close()
+
+    def __del__(self):
+        pass
+
+
