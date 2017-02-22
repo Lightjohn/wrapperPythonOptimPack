@@ -47,7 +47,7 @@ class Optimizer:
         self.iteration = 0
         self.evaluation = 0
 
-    def minimize(self, x, fg, g, bl=None, bu=None, algorithm="vmlmb", maxiter=500, maxeval=500, verbose=False):
+    def minimize(self, x, fg, bl=None, bu=None, algorithm="vmlmb", maxiter=500, maxeval=500, verbose=False):
         # Initialisation of the algorithm
 
         task = self.OPK_TASK_START
@@ -59,52 +59,61 @@ class Optimizer:
         # Beginning of the algorithm
         while True:
             if verbose:
-                print("task = ", self.OPK_TASKS[task])
+                print("PYTHON task = ", self.OPK_TASKS[task])
             if task == self.OPK_TASK_START:
                 task = opkc_v3_1.initialisation(x, algorithm, bu, bl)
-                # Caller must compute f(x) and g(x).
+            
+            # Caller must compute f(x) and g(x).
             elif task == self.OPK_TASK_COMPUTE_FG:
-                fx = fg(x, g)  # Compute f and g
+                fx, g = fg(x)  # Compute f and g
                 self.evaluation += 1  # Increase evaluation
                 task = opkc_v3_1.iterate(x, fx, g)  # Iterate
-                # A new iterate is available
+            
+            # A new iterate is available
             elif task == self.OPK_TASK_NEW_X:
                 self.iteration += 1  # Increase iteration
                 task = opkc_v3_1.iterate(x, fx, g)  # Iterate
-                # Algorithm has converged, solution is available
+            
+            # Algorithm has converged, solution is available
             elif task == self.OPK_TASK_FINAL_X:
                 print("Algorithm has converged, solution is available")
                 print("iteration = ", self.iteration, "     evaluation = ", self.evaluation)
                 break
-                # Algorithm terminated with a warning
+            
+            # Algorithm terminated with a warning
             elif task == self.OPK_TASK_WARNING:
                 print("Algorithm terminated with a warning")
                 error = True
-                # An error has ocurred
+            
+            # An error has ocurred
             elif task == self.OPK_TASK_ERROR:
                 print("ERROR OPK_TASK_ERROR has occurred, reason:", opkc_v3_1.get_reason())
                 error = True
-                # Error in the variable input
+            
+            # Error in the variable input
             else:
                 print("ERROR Unknown task has been asked:", task)
                 error = True
-                # An error has occured
+            # An error has occured
+            
             if error:
                 break
-                # Too much iterations, check OPK_TASK_NEW_X
+            
+            # Too much iterations, check OPK_TASK_NEW_X
             if self.iteration >= maxiter:
                 print("Too much iteration\n")
                 print("iteration = ", self.iteration, "     evaluation = ", self.evaluation)
                 break
-                # Too much evaluation of f and g, check OPK_TASK_COMPUTE_FG
+            
+            # Too much evaluation of f and g, check OPK_TASK_COMPUTE_FG
             if self.evaluation >= maxeval:
                 print("Too much evaluation\n")
                 print("iteration = ", self.iteration, "     evaluation = ", self.evaluation)
                 break
+            
             if fx and verbose:
-                print(" f(x) = ", fx)
+                print("PYTHON f(x) = ", fx)
         print("PY counter:", opkc_v3_1.counter," Single:", opkc_v3_1.single, opkc_v3_1.get_gnorm())
-        # self.close()
         return x
 
 
@@ -114,5 +123,3 @@ class Optimizer:
 
     def __del__(self):
         pass
-
-

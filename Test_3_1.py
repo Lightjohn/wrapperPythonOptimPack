@@ -1,32 +1,32 @@
-# import Kernel_Estimation_v6 as MonImage
-import Mes_Fonctions_v2 as MesFonctions
-from random import random
-import math
 import numpy as np
-import copy
 import opkpy_v3_1
 
+a = 1
+b = 100
 
-def rosenbrock(x):
-    return (x[0] - 1) * (x[0] - 1) + 10 * (x[0] * x[0] - x[1] * x[1]) * (x[0] * x[0] - x[1] * x[1])
+global_minimum = np.array([a, a ** 2])
 
+def rosen_fun(vec):
+    x, y = vec[0], vec[1]
+    return (a - x) ** 2 + b * (y - x ** 2) ** 2
 
+def rosen_grad(vec):
+    x, y = vec[0], vec[1]
+    df_dx = -2 * (a - 2 * b * x ** 3 + 2 * b * x * y - x)
+    df_dy = b * (2 * y - 2 * x ** 2)
+    return np.array([df_dx, df_dy]).astype('float32')
 
-def fg_rosen(x, gx):
-    gx[0] = 2 * (x[0] - 1) + 40 * x[0] * (x[0] * x[0] - x[1] * x[1])
-    gx[1] = -40 * x[1] * (x[0] * x[0] - x[1] * x[1])
-    return rosenbrock(x)
+def fg_rosen(vec):
+    return rosen_fun(vec), rosen_grad(vec)
 
 
 if __name__ == "__main__":
     opt = opkpy_v3_1.Optimizer()
-    bu= np.array([20, 10, 11, 12, 13], dtype="float32")
-    bl= np.array([0.2, 0.1, -0.1, 1.2, 1.3], dtype="float32")
-    x = np.array([-1.2, 1.0, 2.5, 3.6, 1.4], dtype="float32")
-    g = np.array([1, 2, 3 , 2 , 1], dtype="float32")
-    f = fg_rosen(x, g)
+    bu = np.array([20, 10], dtype="float32")
+    bl = np.array([0.2, 0.1], dtype="float32")
+    x = np.array([-1.2, 1.0], dtype="float32")
 
-    print("INPUT:" + str(x), str(x.dtype))
-    opt.minimize(x, fg_rosen, g, maxiter=5, maxeval=20, verbose=True)
-    print("OUTPUT:" + str(x))
+    found_minimum = opt.minimize(x, fg_rosen, bu=bu, bl=bl, maxiter=50, maxeval=50)
+    
+    assert(np.isclose(found_minimum, global_minimum, atol=1e-4).all())
 

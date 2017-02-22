@@ -37,9 +37,6 @@ initialisation(PyObject * self, PyObject * args, PyObject * keywds)
     char *algorithm_name = "vmlmb";
     int algorithm_method = OPK_ALGORITHM_VMLMB;
 
-    // opk_bound_t *lower;
-    // opk_bound_t *upper;
-
     // Preparing and settinf arguments and keywords
     static char *kwlist[] =
         { "x", "algorithm", "upper_bound", "lower_bound", NULL };
@@ -100,6 +97,9 @@ initialisation(PyObject * self, PyObject * args, PyObject * keywds)
         bound_up = (single ? OPK_BOUND_SCALAR_FLOAT : OPK_BOUND_SCALAR_DOUBLE);
         double tmp_up = PyFloat_AsDouble(bound_up_obj);
         bound_up_arr = (void *) &tmp_up;        // Should work in float and double case ....
+        /* This does not work, because it discards the information that the bounds are
+        scalar, which results in treating the &tmp_up as an array, which in turn leads to
+        reading garbage in the OptimPack code. Same in the second block below */
     } else if (PyArray_Check(bound_up_obj)) {
         bound_up = (single ? OPK_BOUND_STATIC_FLOAT : OPK_BOUND_STATIC_DOUBLE);
         PyArrayObject *bound_up_arr_tmp;
@@ -127,7 +127,7 @@ initialisation(PyObject * self, PyObject * args, PyObject * keywds)
         bound_low = (single ? OPK_BOUND_STATIC_FLOAT : OPK_BOUND_STATIC_DOUBLE);
         PyArrayObject *bound_low_arr_tmp;
         bound_low_arr_tmp =
-            (PyArrayObject *) PyArray_FROM_OT(bound_up_obj,
+            (PyArrayObject *) PyArray_FROM_OT(bound_low_obj,
                                               (single ? NPY_FLOAT :
                                                NPY_DOUBLE));
         bound_low_arr = PyArray_DATA(bound_low_arr_tmp);
@@ -195,12 +195,12 @@ iterate(PyObject * self, PyObject * args)
                         "Input is not the same type as initialization");
         return NULL;
     }
-    if (single == OPK_DOUBLE) {
-        x_arr = (PyArrayObject *) PyArray_FROM_OT(x_obj, NPY_DOUBLE);
-        g_arr = (PyArrayObject *) PyArray_FROM_OT(g_obj, NPY_DOUBLE);
-    } else {
+    if (single) {
         x_arr = (PyArrayObject *) PyArray_FROM_OT(x_obj, NPY_FLOAT);
         g_arr = (PyArrayObject *) PyArray_FROM_OT(g_obj, NPY_FLOAT);
+    } else {
+        x_arr = (PyArrayObject *) PyArray_FROM_OT(x_obj, NPY_DOUBLE);
+        g_arr = (PyArrayObject *) PyArray_FROM_OT(g_obj, NPY_DOUBLE);
     }
     if (x_arr == NULL || g_arr == NULL) {
         return NULL;
